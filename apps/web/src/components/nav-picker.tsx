@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import {
   Command,
@@ -10,9 +10,10 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { cn } from "@/lib/utils";
 
-/** Shared entrance animation for sidebar nav/picker rows (fade + slide up). */
+const EASE = [0.22, 1, 0.36, 1] as const;
+
+/** Shared entrance animation for sidebar nav rows (fade + slide up). Used by the tree. */
 export const NAV_ITEM_ENTER =
   "duration-300 animate-in fade-in fill-mode-both slide-in-from-bottom-2";
 
@@ -48,7 +49,13 @@ export function NavPicker({
 /** A group of picker items, optionally with a `heading`. */
 export { CommandGroup as NavPickerGroup };
 
-/** A navigable picker item; shows a check when `active` and closes on select. */
+/**
+ * A navigable picker item; shows a check when `active` and closes on select.
+ *
+ * The entrance (fade + slide up) is driven by motion on an inner element so it
+ * runs once on mount: it neither replays when cmdk shows/hides rows during a
+ * search, nor leaves a transform-teardown snap when it settles.
+ */
 export function NavPickerItem({
   value,
   href,
@@ -65,9 +72,6 @@ export function NavPickerItem({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  // Animate only on first mount, then drop the class so cmdk's show/hide while
-  // filtering the search query doesn't retrigger the entrance animation.
-  const [entering, setEntering] = useState(true);
 
   return (
     <CommandItem
@@ -77,11 +81,16 @@ export function NavPickerItem({
         onNavigate();
         router.push(href);
       }}
-      onAnimationEnd={() => setEntering(false)}
-      className={cn("gap-2", entering && NAV_ITEM_ENTER)}
-      style={entering ? { animationDelay: navItemDelay(index) } : undefined}
+      className="gap-2"
     >
-      {children}
+      <motion.span
+        className="flex flex-1 items-center gap-2"
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: EASE, delay: Math.min(index, 12) * 0.01 }}
+      >
+        {children}
+      </motion.span>
     </CommandItem>
   );
 }
