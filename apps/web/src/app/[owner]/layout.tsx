@@ -33,9 +33,9 @@ export default async function OwnerLayout({
         } as React.CSSProperties
       }
     >
-      <AppSidebar owners={owners} activeOwner={owner} user={user} />
+      <AppSidebar owners={owners} activeOwner={owner} user={user} repos={repos} />
       <SidebarInset>
-        <SiteHeader owner={owner} repos={repos} />
+        <SiteHeader />
         <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">{children}</div>
       </SidebarInset>
     </SidebarProvider>

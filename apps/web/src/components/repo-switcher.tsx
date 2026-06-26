@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { ChevronsUpDown, FolderGit2 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import {
   Command,
   CommandEmpty,
@@ -42,10 +41,17 @@ export function RepoSwitcher({ owner, repos }: { owner: string; repos: Repo[] })
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger render={<Button variant="ghost" size="sm" className="gap-2 font-medium" />}>
-        <FolderGit2 className="size-4" />
-        {label}
-        <ChevronsUpDown className="size-4 text-muted-foreground" />
+      <PopoverTrigger
+        render={
+          <button
+            type="button"
+            className="flex w-full items-center gap-2 rounded-md bg-muted/75 px-4 py-2 text-sm font-semibold transition-colors hover:bg-muted data-[popup-open]:bg-muted"
+          />
+        }
+      >
+        <FolderGit2 className="size-4 shrink-0" />
+        <span className="truncate">{label}</span>
+        <ChevronsUpDown className="ml-auto size-4 shrink-0 text-muted-foreground" />
       </PopoverTrigger>
       <PopoverContent align="start" className="w-64 p-0">
         <Command>
