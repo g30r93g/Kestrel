@@ -23,7 +23,7 @@ export function RepoSwitcher({
       onClick={onToggle}
       className={cn(
         "flex w-full items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition-colors",
-        active ? "bg-muted ring-1 ring-border" : "bg-muted/75 hover:bg-muted",
+        active ? "bg-muted" : "bg-muted/75 hover:bg-muted",
       )}
     >
       <FolderGit2 className="size-4 shrink-0" />
