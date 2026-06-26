@@ -1,9 +1,10 @@
 "use client";
 
-import { ChevronsUpDown, FolderGit2 } from "lucide-react";
 import { NavPicker, NavPickerGroup, NavPickerItem } from "@/components/nav-picker";
-import { cn } from "@/lib/utils";
 import type { Repo } from "@/lib/github";
+import { cn } from "@/lib/utils";
+import { Button } from "@base-ui/react";
+import { ChevronsUpDown, FolderGit2 } from "lucide-react";
 
 // The pill at the top of the sidebar. Acts as a toggle for the repo list;
 // shows an active state while the list is open.
@@ -17,19 +18,19 @@ export function RepoSwitcher({
   onToggle: () => void;
 }) {
   return (
-    <button
+    <Button
       type="button"
       aria-expanded={active}
       onClick={onToggle}
       className={cn(
-        "flex w-full items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition-colors",
+        "flex w-full items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition-colors text-sidebar-accent-foreground",
         active ? "bg-muted" : "bg-muted/75 hover:bg-muted",
       )}
     >
       <FolderGit2 className="size-4 shrink-0" />
       <span className="truncate">{label}</span>
       <ChevronsUpDown className="ml-auto size-4 shrink-0 text-muted-foreground" />
-    </button>
+    </Button>
   );
 }
 
