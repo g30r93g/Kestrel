@@ -2,6 +2,10 @@ packages:
   - "apps/*"
   - "packages/*"
 
+allowBuilds:
+  sharp: true
+  unrs-resolver: true
+
 # Native dependencies allowed to run install/build scripts.
 # sharp: Next.js image optimization. unrs-resolver: ESLint import resolver.
 onlyBuiltDependencies:
