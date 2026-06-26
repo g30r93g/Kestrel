@@ -1,9 +1,5 @@
 "use client";
 
-import { AnimatePresence, motion } from "motion/react";
-import { ChevronLeft } from "lucide-react";
-import Link from "next/link";
-import { useParams } from "next/navigation";
 import { NAV_ITEM_ENTER, navItemDelay } from "@/components/nav-picker";
 import { OwnerList } from "@/components/owner-switcher";
 import { RepoList, RepoSwitcher } from "@/components/repo-switcher";
@@ -18,6 +14,10 @@ import {
 } from "@/components/ui/sidebar";
 import type { Owner, Repo } from "@/lib/github";
 import { type NavNode, nodeHref, resolveNav } from "@/lib/nav-tree";
+import { ChevronLeft } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
 
 type Panel = "none" | "owners" | "repos";
 
@@ -96,7 +96,6 @@ export function NavTree({
         {model.groups.map((group, i) => (
           <SidebarGroup key={group.id}>
             {group.label && <SidebarGroupLabel>{group.label}</SidebarGroupLabel>}
-            {i > 0 && !group.label && <SidebarSeparator className="mb-1" />}
             <SidebarMenu>{group.nodes.map(renderNode)}</SidebarMenu>
           </SidebarGroup>
         ))}

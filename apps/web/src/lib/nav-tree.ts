@@ -84,7 +84,6 @@ export const ownerRootGroups: NavGroup[] = [
   },
   {
     id: "places",
-    label: "Places",
     nodes: [
       leaf("repositories", "Repositories", FolderGit2),
       leaf("projects", "Projects", LayoutGrid),
