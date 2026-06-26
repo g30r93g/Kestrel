@@ -102,7 +102,10 @@ export function NavTree({
 
         {model.pinned && (
           <SidebarGroup className="mt-auto">
-            <SidebarSeparator className="mb-1" />
+            <SidebarSeparator
+              className={`mb-1 ${FADE_ENTER}`}
+              style={{ animationDelay: navItemDelay(row) }}
+            />
             <SidebarMenu>{renderNode(model.pinned)}</SidebarMenu>
           </SidebarGroup>
         )}
