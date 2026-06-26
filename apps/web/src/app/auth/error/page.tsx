@@ -12,7 +12,7 @@ export default async function AuthErrorPage({
         {error ? `Error: ${error}` : "Something went wrong during sign-in."}
       </p>
       <a href="/sign-in" className="text-sm underline">
-        Back to sign in
+        Try again
       </a>
     </main>
   );
