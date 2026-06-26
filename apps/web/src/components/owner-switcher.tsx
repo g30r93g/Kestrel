@@ -76,6 +76,7 @@ export function OwnerList({
       {user && (
         <NavPickerGroup>
           <NavPickerItem
+            index={0}
             value={user.login}
             href={`/${user.login}`}
             active={activeOwner === user.login}
@@ -88,9 +89,10 @@ export function OwnerList({
       )}
       {orgs.length > 0 && (
         <NavPickerGroup heading="Organizations">
-          {orgs.map((org) => (
+          {orgs.map((org, i) => (
             <NavPickerItem
               key={org.login}
+              index={(user ? 1 : 0) + i}
               value={org.login}
               href={`/${org.login}`}
               active={activeOwner === org.login}

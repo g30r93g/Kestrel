@@ -49,6 +49,7 @@ export function RepoList({
     <NavPicker placeholder="Search repositories…" emptyText="No repository found.">
       <NavPickerGroup>
         <NavPickerItem
+          index={0}
           value="All repositories"
           href={`/${owner}`}
           active={!activeRepo}
@@ -56,9 +57,10 @@ export function RepoList({
         >
           All repositories
         </NavPickerItem>
-        {repos.map((repo) => (
+        {repos.map((repo, i) => (
           <NavPickerItem
             key={repo.name}
+            index={i + 1}
             value={repo.name}
             href={`/${owner}/${repo.name}`}
             active={activeRepo === repo.name}

@@ -47,12 +47,14 @@ export function NavPickerItem({
   value,
   href,
   active,
+  index = 0,
   onNavigate,
   children,
 }: {
   value: string;
   href: string;
   active?: boolean;
+  index?: number;
   onNavigate: () => void;
   children: React.ReactNode;
 }) {
@@ -65,7 +67,8 @@ export function NavPickerItem({
         onNavigate();
         router.push(href);
       }}
-      className="gap-2"
+      className="gap-2 duration-300 animate-in fade-in fill-mode-both slide-in-from-bottom-2"
+      style={{ animationDelay: `${Math.min(index, 12) * 25}ms` }}
     >
       {children}
     </CommandItem>

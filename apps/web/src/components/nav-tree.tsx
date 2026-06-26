@@ -123,9 +123,9 @@ export function NavTree({
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
           key={panel}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
+          initial={panel === "none" ? { opacity: 0 } : false}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
           transition={{ duration: 0.18, ease: EASE }}
           className="flex min-h-0 flex-1 flex-col gap-2"
         >
