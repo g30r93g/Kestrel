@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { getOctokit } from "@/lib/github";
 import { SignOutButton } from "@/components/sign-out-button";
@@ -7,7 +8,7 @@ export default async function Home() {
   const session = await auth.api.getSession({ headers: await headers() });
 
   // The proxy redirects unauthenticated requests; this guard satisfies types.
-  if (!session) return null;
+  if (!session) redirect("/sign-in");
 
   const octokit = await getOctokit();
   const { data: ghUser } = await octokit.rest.users.getAuthenticated();
