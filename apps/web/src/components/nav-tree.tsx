@@ -93,7 +93,7 @@ export function NavTree({
           </div>
         )}
 
-        {model.groups.map((group, i) => (
+        {model.groups.map((group) => (
           <SidebarGroup key={group.id}>
             {group.label && <SidebarGroupLabel>{group.label}</SidebarGroupLabel>}
             <SidebarMenu>{group.nodes.map(renderNode)}</SidebarMenu>
