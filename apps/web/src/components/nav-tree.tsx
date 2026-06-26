@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { OwnerList } from "@/components/owner-switcher";
 import { RepoList, RepoSwitcher } from "@/components/repo-switcher";
 import {
   SidebarContent,
@@ -14,16 +14,29 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
 } from "@/components/ui/sidebar";
-import type { Repo } from "@/lib/github";
+import type { Owner, Repo } from "@/lib/github";
 import { type NavNode, nodeHref, resolveNav } from "@/lib/nav-tree";
 
-export function NavTree({ repos }: { repos: Repo[] }) {
+type Panel = "none" | "owners" | "repos";
+
+export function NavTree({
+  repos,
+  owners,
+  panel,
+  onToggleRepos,
+  onClose,
+}: {
+  repos: Repo[];
+  owners: Owner[];
+  panel: Panel;
+  onToggleRepos: () => void;
+  onClose: () => void;
+}) {
   const params = useParams<{ owner: string; rest?: string[] }>();
   const owner = params.owner;
   const segments = params.rest ?? [];
   const model = resolveNav(owner, segments);
   const activeRepo = model.context === "repo" ? segments[0] : undefined;
-  const [picking, setPicking] = useState(false);
 
   const renderNode = (node: NavNode) => {
     const Icon = node.icon;
@@ -41,21 +54,20 @@ export function NavTree({ repos }: { repos: Repo[] }) {
 
   return (
     <SidebarContent>
-      <div className="pt-3 pb-1">
-        <RepoSwitcher
-          label={activeRepo ?? "All repositories"}
-          active={picking}
-          onToggle={() => setPicking((p) => !p)}
-        />
-      </div>
+      {panel !== "owners" && (
+        <div className="pt-3 pb-1">
+          <RepoSwitcher
+            label={activeRepo ?? "All repositories"}
+            active={panel === "repos"}
+            onToggle={onToggleRepos}
+          />
+        </div>
+      )}
 
-      {picking ? (
-        <RepoList
-          owner={owner}
-          repos={repos}
-          activeRepo={activeRepo}
-          onNavigate={() => setPicking(false)}
-        />
+      {panel === "owners" ? (
+        <OwnerList owners={owners} activeOwner={owner} onNavigate={onClose} />
+      ) : panel === "repos" ? (
+        <RepoList owner={owner} repos={repos} activeRepo={activeRepo} onNavigate={onClose} />
       ) : (
         <>
           {model.back && (

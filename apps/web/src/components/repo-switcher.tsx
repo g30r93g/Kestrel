@@ -1,15 +1,7 @@
 "use client";
 
 import { ChevronsUpDown, FolderGit2 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
+import { NavPicker, NavPickerGroup, NavPickerItem } from "@/components/nav-picker";
 import { cn } from "@/lib/utils";
 import type { Repo } from "@/lib/github";
 
@@ -53,37 +45,29 @@ export function RepoList({
   activeRepo?: string;
   onNavigate: () => void;
 }) {
-  const router = useRouter();
-  const go = (href: string) => {
-    onNavigate();
-    router.push(href);
-  };
-
   return (
-    <Command className="bg-transparent">
-      <CommandInput placeholder="Search repositories…" autoFocus />
-      <CommandList>
-        <CommandEmpty>No repository found.</CommandEmpty>
-        <CommandGroup>
-          <CommandItem
-            value="All repositories"
-            data-checked={!activeRepo ? "true" : undefined}
-            onSelect={() => go(`/${owner}`)}
+    <NavPicker placeholder="Search repositories…" emptyText="No repository found.">
+      <NavPickerGroup>
+        <NavPickerItem
+          value="All repositories"
+          href={`/${owner}`}
+          active={!activeRepo}
+          onNavigate={onNavigate}
+        >
+          All repositories
+        </NavPickerItem>
+        {repos.map((repo) => (
+          <NavPickerItem
+            key={repo.name}
+            value={repo.name}
+            href={`/${owner}/${repo.name}`}
+            active={activeRepo === repo.name}
+            onNavigate={onNavigate}
           >
-            All repositories
-          </CommandItem>
-          {repos.map((repo) => (
-            <CommandItem
-              key={repo.name}
-              value={repo.name}
-              data-checked={activeRepo === repo.name ? "true" : undefined}
-              onSelect={() => go(`/${owner}/${repo.name}`)}
-            >
-              {repo.name}
-            </CommandItem>
-          ))}
-        </CommandGroup>
-      </CommandList>
-    </Command>
+            {repo.name}
+          </NavPickerItem>
+        ))}
+      </NavPickerGroup>
+    </NavPicker>
   );
 }
