@@ -17,7 +17,7 @@ export const getReposForOwner = cache(async (owner: string): Promise<Repo[]> => 
     if (owner === user.login) {
       const { data } = await octokit.rest.repos.listForAuthenticatedUser({
         affiliation: "owner",
-        sort: "updated",
+        sort: "pushed",
         per_page: 100,
       });
       return data.map((r) => ({ name: r.name, owner: r.owner.login, private: r.private }));
@@ -25,7 +25,7 @@ export const getReposForOwner = cache(async (owner: string): Promise<Repo[]> => 
 
     const { data } = await octokit.rest.repos.listForOrg({
       org: owner,
-      sort: "updated",
+      sort: "pushed",
       per_page: 100,
     });
     return data.map((r) => ({ name: r.name, owner: r.owner.login, private: r.private }));
