@@ -1,5 +1,6 @@
 "use client";
 
+import { AnimatePresence, motion } from "motion/react";
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -18,6 +19,8 @@ import type { Owner, Repo } from "@/lib/github";
 import { type NavNode, nodeHref, resolveNav } from "@/lib/nav-tree";
 
 type Panel = "none" | "owners" | "repos";
+
+const EASE = [0.22, 1, 0.36, 1] as const;
 
 export function NavTree({
   repos,
@@ -52,58 +55,83 @@ export function NavTree({
     );
   };
 
+  const body =
+    panel === "owners" ? (
+      <OwnerList owners={owners} activeOwner={owner} onNavigate={onClose} />
+    ) : panel === "repos" ? (
+      <RepoList owner={owner} repos={repos} activeRepo={activeRepo} onNavigate={onClose} />
+    ) : (
+      <>
+        {model.back && (
+          <SidebarMenu className="px-2 pt-2">
+            <SidebarMenuItem>
+              <SidebarMenuButton render={<Link href={model.back.href} />}>
+                <ChevronLeft />
+                <span>{model.back.label}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        )}
+
+        {model.header && (
+          <div className="flex items-center gap-2 px-4 py-1 text-sm font-medium">
+            <model.header.icon className="size-4" />
+            {model.header.label}
+          </div>
+        )}
+
+        {model.groups.map((group, i) => (
+          <SidebarGroup key={group.id}>
+            {group.label && <SidebarGroupLabel>{group.label}</SidebarGroupLabel>}
+            {i > 0 && !group.label && <SidebarSeparator className="mb-1" />}
+            <SidebarMenu>{group.nodes.map(renderNode)}</SidebarMenu>
+          </SidebarGroup>
+        ))}
+
+        {model.pinned && (
+          <SidebarGroup className="mt-auto">
+            <SidebarSeparator className="mb-1" />
+            <SidebarMenu>{renderNode(model.pinned)}</SidebarMenu>
+          </SidebarGroup>
+        )}
+      </>
+    );
+
   return (
-    <SidebarContent>
-      {panel !== "owners" && (
-        <div className="pt-3 pb-1">
-          <RepoSwitcher
-            label={activeRepo ?? "All repositories"}
-            active={panel === "repos"}
-            onToggle={onToggleRepos}
-          />
-        </div>
-      )}
-
-      {panel === "owners" ? (
-        <OwnerList owners={owners} activeOwner={owner} onNavigate={onClose} />
-      ) : panel === "repos" ? (
-        <RepoList owner={owner} repos={repos} activeRepo={activeRepo} onNavigate={onClose} />
-      ) : (
-        <>
-          {model.back && (
-            <SidebarMenu className="px-2 pt-2">
-              <SidebarMenuItem>
-                <SidebarMenuButton render={<Link href={model.back.href} />}>
-                  <ChevronLeft />
-                  <span>{model.back.label}</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          )}
-
-          {model.header && (
-            <div className="flex items-center gap-2 px-4 py-1 text-sm font-medium">
-              <model.header.icon className="size-4" />
-              {model.header.label}
+    <SidebarContent className="overflow-x-hidden">
+      <AnimatePresence initial={false}>
+        {panel !== "owners" && (
+          <motion.div
+            key="repo-pill"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.18, ease: EASE }}
+            className="overflow-hidden"
+          >
+            <div className="pt-3 pb-1">
+              <RepoSwitcher
+                label={activeRepo ?? "All repositories"}
+                active={panel === "repos"}
+                onToggle={onToggleRepos}
+              />
             </div>
-          )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-          {model.groups.map((group, i) => (
-            <SidebarGroup key={group.id}>
-              {group.label && <SidebarGroupLabel>{group.label}</SidebarGroupLabel>}
-              {i > 0 && !group.label && <SidebarSeparator className="mb-1" />}
-              <SidebarMenu>{group.nodes.map(renderNode)}</SidebarMenu>
-            </SidebarGroup>
-          ))}
-
-          {model.pinned && (
-            <SidebarGroup className="mt-auto">
-              <SidebarSeparator className="mb-1" />
-              <SidebarMenu>{renderNode(model.pinned)}</SidebarMenu>
-            </SidebarGroup>
-          )}
-        </>
-      )}
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.div
+          key={panel}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.18, ease: EASE }}
+          className="flex min-h-0 flex-1 flex-col gap-2"
+        >
+          {body}
+        </motion.div>
+      </AnimatePresence>
     </SidebarContent>
   );
 }
