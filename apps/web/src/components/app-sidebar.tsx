@@ -4,25 +4,27 @@ import { NavTree } from "@/components/nav-tree";
 import { NavUser } from "@/components/nav-user";
 import { OwnerSwitcher } from "@/components/owner-switcher";
 import { Sidebar, SidebarFooter, SidebarHeader } from "@/components/ui/sidebar";
-import type { Owner, Repo } from "@/lib/github";
+import { fetchOwners, fetchReposForOwner } from "@/lib/github/actions";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import useSWR from "swr";
 
 type Panel = "none" | "owners" | "repos";
 
 export function AppSidebar({
-  owners,
   activeOwner,
   user,
-  repos,
 }: {
-  owners: Owner[];
   activeOwner: string;
   user: { name: string; email: string; avatar: string };
-  repos: Repo[];
 }) {
   const [panel, setPanel] = useState<Panel>("none");
   const toggle = (p: Panel) => setPanel((cur) => (cur === p ? "none" : p));
+
+  const { data: owners = [] } = useSWR("owners", fetchOwners);
+  const { data: repos = [] } = useSWR(["repos", activeOwner], () =>
+    fetchReposForOwner(activeOwner),
+  );
 
   return (
     <Sidebar variant="inset">
