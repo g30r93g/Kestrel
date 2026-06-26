@@ -8,6 +8,7 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -19,6 +20,23 @@ export function OwnerSwitcher({ owners, activeOwner }: { owners: Owner[]; active
   const router = useRouter();
   const active = owners.find((o) => o.login === activeOwner) ?? owners[0];
   if (!active) return null;
+
+  const user = owners.find((o) => o.type === "user");
+  const orgs = owners.filter((o) => o.type === "org");
+
+  const renderOwner = (owner: Owner) => (
+    <DropdownMenuItem
+      key={owner.login}
+      className="gap-2 p-2"
+      onClick={() => router.push(`/${owner.login}`)}
+    >
+      <Avatar className="size-6 rounded-md">
+        <AvatarImage src={owner.avatarUrl} alt={owner.login} />
+        <AvatarFallback className="rounded-md">{owner.login.slice(0, 2).toUpperCase()}</AvatarFallback>
+      </Avatar>
+      {owner.login}
+    </DropdownMenuItem>
+  );
 
   return (
     <SidebarMenu>
@@ -43,22 +61,18 @@ export function OwnerSwitcher({ owners, activeOwner }: { owners: Owner[]; active
             side={isMobile ? "bottom" : "right"}
             sideOffset={4}
           >
-            <DropdownMenuGroup>
-              <DropdownMenuLabel className="text-xs text-muted-foreground">Owners</DropdownMenuLabel>
-              {owners.map((owner) => (
-                <DropdownMenuItem
-                  key={owner.login}
-                  className="gap-2 p-2"
-                  onClick={() => router.push(`/${owner.login}`)}
-                >
-                  <Avatar className="size-6 rounded-md">
-                    <AvatarImage src={owner.avatarUrl} alt={owner.login} />
-                    <AvatarFallback className="rounded-md">{owner.login.slice(0, 2).toUpperCase()}</AvatarFallback>
-                  </Avatar>
-                  {owner.login}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuGroup>
+            {user && <DropdownMenuGroup>{renderOwner(user)}</DropdownMenuGroup>}
+            {orgs.length > 0 && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel className="text-xs text-muted-foreground">
+                    Organizations
+                  </DropdownMenuLabel>
+                  {orgs.map(renderOwner)}
+                </DropdownMenuGroup>
+              </>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
