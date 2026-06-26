@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { RepoSwitcher } from "@/components/repo-switcher";
+import { ModeToggle } from "@/components/mode-toggle";
 import type { Repo } from "@/lib/github";
 
 export function SiteHeader({
@@ -22,6 +23,7 @@ export function SiteHeader({
           <Button variant="ghost" size="icon" aria-label="Command palette"><Command className="size-4" /></Button>
           <Button variant="ghost" size="icon" aria-label="Inbox"><Bell className="size-4" /></Button>
           <Button variant="ghost" size="icon" aria-label="Create"><Plus className="size-4" /></Button>
+          <ModeToggle />
         </div>
       </div>
     </header>
