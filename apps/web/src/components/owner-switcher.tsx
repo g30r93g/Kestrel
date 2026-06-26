@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
@@ -42,20 +43,22 @@ export function OwnerSwitcher({ owners, activeOwner }: { owners: Owner[]; active
             side={isMobile ? "bottom" : "right"}
             sideOffset={4}
           >
-            <DropdownMenuLabel className="text-xs text-muted-foreground">Owners</DropdownMenuLabel>
-            {owners.map((owner) => (
-              <DropdownMenuItem
-                key={owner.login}
-                className="gap-2 p-2"
-                onClick={() => router.push(`/${owner.login}`)}
-              >
-                <Avatar className="size-6 rounded-md">
-                  <AvatarImage src={owner.avatarUrl} alt={owner.login} />
-                  <AvatarFallback className="rounded-md">{owner.login.slice(0, 2).toUpperCase()}</AvatarFallback>
-                </Avatar>
-                {owner.login}
-              </DropdownMenuItem>
-            ))}
+            <DropdownMenuGroup>
+              <DropdownMenuLabel className="text-xs text-muted-foreground">Owners</DropdownMenuLabel>
+              {owners.map((owner) => (
+                <DropdownMenuItem
+                  key={owner.login}
+                  className="gap-2 p-2"
+                  onClick={() => router.push(`/${owner.login}`)}
+                >
+                  <Avatar className="size-6 rounded-md">
+                    <AvatarImage src={owner.avatarUrl} alt={owner.login} />
+                    <AvatarFallback className="rounded-md">{owner.login.slice(0, 2).toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  {owner.login}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
