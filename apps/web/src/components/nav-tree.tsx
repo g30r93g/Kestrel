@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { NAV_ITEM_ENTER, navItemDelay } from "@/components/nav-picker";
 import { OwnerList } from "@/components/owner-switcher";
 import { RepoList, RepoSwitcher } from "@/components/repo-switcher";
 import {
@@ -21,6 +22,7 @@ import { type NavNode, nodeHref, resolveNav } from "@/lib/nav-tree";
 type Panel = "none" | "owners" | "repos";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
+const FADE_ENTER = "duration-300 animate-in fade-in fill-mode-both";
 
 export function NavTree({
   repos,
@@ -41,12 +43,23 @@ export function NavTree({
   const model = resolveNav(owner, segments);
   const activeRepo = model.context === "repo" ? segments[0] : undefined;
 
+  // Running row index so tree items stagger up like the picker lists. They
+  // mount (and animate) when the panel swaps back to the tree, e.g. after
+  // switching repos/owners — not on in-place section navigation.
+  let row = 0;
   const renderNode = (node: NavNode) => {
     const Icon = node.icon;
     const isActive = model.activeId === node.id;
+    const delay = navItemDelay(row++);
     return (
       <SidebarMenuItem key={node.id}>
-        <SidebarMenuButton render={<Link href={nodeHref(model.basePath, node)} />} isActive={isActive} tooltip={node.label}>
+        <SidebarMenuButton
+          render={<Link href={nodeHref(model.basePath, node)} />}
+          isActive={isActive}
+          tooltip={node.label}
+          className={NAV_ITEM_ENTER}
+          style={{ animationDelay: delay }}
+        >
           <Icon />
           <span>{node.label}</span>
           {node.badge ? <span className="ml-auto text-xs text-muted-foreground">{node.badge}</span> : null}
@@ -65,7 +78,7 @@ export function NavTree({
         {model.back && (
           <SidebarMenu className="px-2 pt-2">
             <SidebarMenuItem>
-              <SidebarMenuButton render={<Link href={model.back.href} />}>
+              <SidebarMenuButton render={<Link href={model.back.href} />} className={FADE_ENTER}>
                 <ChevronLeft />
                 <span>{model.back.label}</span>
               </SidebarMenuButton>
@@ -74,7 +87,7 @@ export function NavTree({
         )}
 
         {model.header && (
-          <div className="flex items-center gap-2 px-4 py-1 text-sm font-medium">
+          <div className={`flex items-center gap-2 px-4 py-1 text-sm font-medium ${FADE_ENTER}`}>
             <model.header.icon className="size-4" />
             {model.header.label}
           </div>
@@ -123,7 +136,7 @@ export function NavTree({
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
           key={panel}
-          initial={panel === "none" ? { opacity: 0 } : false}
+          initial={false}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.18, ease: EASE }}

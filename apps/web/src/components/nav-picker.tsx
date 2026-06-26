@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Command,
@@ -9,15 +10,18 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { cn } from "@/lib/utils";
+
+/** Shared entrance animation for sidebar nav/picker rows (fade + slide up). */
+export const NAV_ITEM_ENTER =
+  "duration-300 animate-in fade-in fill-mode-both slide-in-from-bottom-2";
+
+/** Per-row stagger step, capped so long lists don't cascade forever. */
+export const navItemDelay = (index: number) => `${Math.min(index, 12) * 10}ms`;
 
 /**
  * Inline, searchable picker that replaces the nav tree when a sidebar switcher
- * is toggled open.
- *
- * Pattern: a sidebar switcher exposes a toggle trigger (with an active state)
- * plus a `*List` built from `NavPicker` / `NavPickerGroup` / `NavPickerItem`.
- * `AppSidebar` owns a single `panel` value so the switchers are mutually
- * exclusive, and passes `onNavigate` (which closes the panel) to each list.
+ * is toggled open. Pair with a toggle trigger and a panel value in AppSidebar.
  */
 export function NavPicker({
   placeholder,
@@ -30,7 +34,9 @@ export function NavPicker({
 }) {
   return (
     <Command className="flex-1 bg-transparent">
-      <CommandInput placeholder={placeholder} autoFocus />
+      <div className="duration-300 animate-in fade-in fill-mode-both">
+        <CommandInput placeholder={placeholder} autoFocus />
+      </div>
       <CommandList className="max-h-none min-h-0 flex-1">
         <CommandEmpty>{emptyText}</CommandEmpty>
         {children}
@@ -59,6 +65,10 @@ export function NavPickerItem({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  // Animate only on first mount, then drop the class so cmdk's show/hide while
+  // filtering the search query doesn't retrigger the entrance animation.
+  const [entering, setEntering] = useState(true);
+
   return (
     <CommandItem
       value={value}
@@ -67,8 +77,9 @@ export function NavPickerItem({
         onNavigate();
         router.push(href);
       }}
-      className="gap-2 duration-300 animate-in fade-in fill-mode-both slide-in-from-bottom-2"
-      style={{ animationDelay: `${Math.min(index, 12) * 25}ms` }}
+      onAnimationEnd={() => setEntering(false)}
+      className={cn("gap-2", entering && NAV_ITEM_ENTER)}
+      style={entering ? { animationDelay: navItemDelay(index) } : undefined}
     >
       {children}
     </CommandItem>
