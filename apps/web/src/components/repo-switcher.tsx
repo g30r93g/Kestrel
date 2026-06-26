@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, ChevronsUpDown, FolderGit2 } from "lucide-react";
+import { ChevronsUpDown, FolderGit2 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,7 +13,6 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
 import type { Repo } from "@/lib/github";
 
 const RESERVED = new Set([
@@ -54,22 +53,20 @@ export function RepoSwitcher({ owner, repos }: { owner: string; repos: Repo[] })
           <CommandList>
             <CommandEmpty>No repository found.</CommandEmpty>
             <CommandGroup>
-              <CommandItem value="All repositories" onSelect={() => go(`/${owner}`)}>
-                <Check className={cn("size-4", activeRepo ? "opacity-0" : "opacity-100")} />
+              <CommandItem
+                value="All repositories"
+                data-checked={!activeRepo ? "true" : undefined}
+                onSelect={() => go(`/${owner}`)}
+              >
                 All repositories
               </CommandItem>
               {repos.map((repo) => (
                 <CommandItem
                   key={repo.name}
                   value={repo.name}
+                  data-checked={activeRepo === repo.name ? "true" : undefined}
                   onSelect={() => go(`/${owner}/${repo.name}`)}
                 >
-                  <Check
-                    className={cn(
-                      "size-4",
-                      activeRepo === repo.name ? "opacity-100" : "opacity-0",
-                    )}
-                  />
                   {repo.name}
                 </CommandItem>
               ))}
