@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, FolderGit2 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
@@ -19,6 +19,7 @@ export function NavTree() {
   const owner = params.owner;
   const segments = params.rest ?? [];
   const model = resolveNav(owner, segments);
+  const repoName = model.context === "repo" ? segments[0] : undefined;
 
   const renderNode = (node: NavNode) => {
     const Icon = node.icon;
@@ -36,6 +37,13 @@ export function NavTree() {
 
   return (
     <SidebarContent>
+      {repoName && (
+        <div className="flex items-center gap-2 px-4 pt-3 pb-1 text-sm font-semibold">
+          <FolderGit2 className="size-4 shrink-0" />
+          <span className="truncate">{repoName}</span>
+        </div>
+      )}
+
       {model.back && (
         <SidebarMenu className="px-2 pt-2">
           <SidebarMenuItem>
