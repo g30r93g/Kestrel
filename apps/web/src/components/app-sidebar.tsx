@@ -7,7 +7,7 @@ import { Sidebar, SidebarFooter, SidebarHeader } from "@/components/ui/sidebar";
 import { fetchOwners, fetchReposForOwner } from "@/lib/github/actions";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
-import useSWR from "swr";
+import useSWRImmutable from "swr/immutable";
 
 type Panel = "none" | "owners" | "repos";
 
@@ -21,8 +21,8 @@ export function AppSidebar({
   const [panel, setPanel] = useState<Panel>("none");
   const toggle = (p: Panel) => setPanel((cur) => (cur === p ? "none" : p));
 
-  const { data: owners = [] } = useSWR("owners", fetchOwners);
-  const { data: repos = [] } = useSWR(["repos", activeOwner], () =>
+  const { data: owners = [] } = useSWRImmutable("owners", fetchOwners);
+  const { data: repos = [] } = useSWRImmutable(["repos", activeOwner], () =>
     fetchReposForOwner(activeOwner),
   );
 
