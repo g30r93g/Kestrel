@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default async function AuthErrorPage({
   searchParams,
 }: {
@@ -11,9 +13,9 @@ export default async function AuthErrorPage({
       <p className="text-sm text-red-600">
         {error ? `Error: ${error}` : "Something went wrong during sign-in."}
       </p>
-      <a href="/sign-in" className="text-sm underline">
+      <Link href="/sign-in" className="text-sm underline">
         Back to sign in
-      </a>
+      </Link>
     </main>
   );
 }

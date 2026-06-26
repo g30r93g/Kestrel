@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, ChevronsUpDown, FolderGit2 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,16 +12,12 @@ import {
 import { Button } from "@/components/ui/button";
 import type { Repo } from "@/lib/github";
 
-export function RepoSwitcher({
-  owner,
-  repos,
-  activeRepo,
-}: {
-  owner: string;
-  repos: Repo[];
-  activeRepo?: string;
-}) {
+export function RepoSwitcher({ owner, repos }: { owner: string; repos: Repo[] }) {
   const router = useRouter();
+  const params = useParams<{ rest?: string[] }>();
+  const first = params.rest?.[0];
+  const reserved = new Set(["review", "pulls", "assigned", "mentions", "checks", "repositories", "projects", "teams"]);
+  const activeRepo = first && !reserved.has(first) ? first : undefined;
   const label = activeRepo ?? "All repositories";
 
   return (
