@@ -10,6 +10,7 @@ export const auth = betterAuth({
     github: {
       clientId: process.env.GITHUB_CLIENT_ID as string,
       clientSecret: process.env.GITHUB_CLIENT_SECRET as string,
+      scopes: ["read:user", "user:email", "read:org", "repo"],
     },
   },
   // nextCookies() must be the LAST plugin. It lets Better Auth set cookies
