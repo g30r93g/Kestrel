@@ -1,9 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { RepoSwitcher } from "@/components/repo-switcher";
+import { RepoList, RepoSwitcher } from "@/components/repo-switcher";
 import {
   SidebarContent,
   SidebarGroup,
@@ -21,6 +22,8 @@ export function NavTree({ repos }: { repos: Repo[] }) {
   const owner = params.owner;
   const segments = params.rest ?? [];
   const model = resolveNav(owner, segments);
+  const activeRepo = model.context === "repo" ? segments[0] : undefined;
+  const [picking, setPicking] = useState(false);
 
   const renderNode = (node: NavNode) => {
     const Icon = node.icon;
@@ -39,40 +42,55 @@ export function NavTree({ repos }: { repos: Repo[] }) {
   return (
     <SidebarContent>
       <div className="pt-3 pb-1">
-        <RepoSwitcher owner={owner} repos={repos} />
+        <RepoSwitcher
+          label={activeRepo ?? "All repositories"}
+          active={picking}
+          onToggle={() => setPicking((p) => !p)}
+        />
       </div>
 
-      {model.back && (
-        <SidebarMenu className="px-2 pt-2">
-          <SidebarMenuItem>
-            <SidebarMenuButton render={<Link href={model.back.href} />}>
-              <ChevronLeft />
-              <span>{model.back.label}</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      )}
+      {picking ? (
+        <RepoList
+          owner={owner}
+          repos={repos}
+          activeRepo={activeRepo}
+          onNavigate={() => setPicking(false)}
+        />
+      ) : (
+        <>
+          {model.back && (
+            <SidebarMenu className="px-2 pt-2">
+              <SidebarMenuItem>
+                <SidebarMenuButton render={<Link href={model.back.href} />}>
+                  <ChevronLeft />
+                  <span>{model.back.label}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          )}
 
-      {model.header && (
-        <div className="flex items-center gap-2 px-4 py-1 text-sm font-medium">
-          <model.header.icon className="size-4" />
-          {model.header.label}
-        </div>
-      )}
+          {model.header && (
+            <div className="flex items-center gap-2 px-4 py-1 text-sm font-medium">
+              <model.header.icon className="size-4" />
+              {model.header.label}
+            </div>
+          )}
 
-      {model.groups.map((group, i) => (
-        <SidebarGroup key={group.id}>
-          {group.label && <SidebarGroupLabel>{group.label}</SidebarGroupLabel>}
-          {i > 0 && !group.label && <SidebarSeparator className="mb-1" />}
-          <SidebarMenu>{group.nodes.map(renderNode)}</SidebarMenu>
-        </SidebarGroup>
-      ))}
+          {model.groups.map((group, i) => (
+            <SidebarGroup key={group.id}>
+              {group.label && <SidebarGroupLabel>{group.label}</SidebarGroupLabel>}
+              {i > 0 && !group.label && <SidebarSeparator className="mb-1" />}
+              <SidebarMenu>{group.nodes.map(renderNode)}</SidebarMenu>
+            </SidebarGroup>
+          ))}
 
-      {model.pinned && (
-        <SidebarGroup className="mt-auto">
-          <SidebarSeparator className="mb-1" />
-          <SidebarMenu>{renderNode(model.pinned)}</SidebarMenu>
-        </SidebarGroup>
+          {model.pinned && (
+            <SidebarGroup className="mt-auto">
+              <SidebarSeparator className="mb-1" />
+              <SidebarMenu>{renderNode(model.pinned)}</SidebarMenu>
+            </SidebarGroup>
+          )}
+        </>
       )}
     </SidebarContent>
   );
