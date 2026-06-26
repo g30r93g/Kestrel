@@ -1,6 +1,7 @@
 import { resolveNav } from "@/lib/nav-tree";
 import { getOctokit } from "@/lib/github/client";
 import { BranchesView } from "@/components/branches/branches-view";
+import { CodeView } from "@/components/code/code-view";
 import type { BranchFilter } from "@/lib/github/types";
 
 export default async function DashboardPage({
@@ -10,7 +11,13 @@ export default async function DashboardPage({
 }) {
   const { owner, rest } = await params;
   const segments = rest ?? [];
-  const model = resolveNav(owner, segments);
+
+  // Code view: /{owner}/{repo}/code[/...path]
+  if (segments.length >= 2 && segments[1] === "code") {
+    const repo = segments[0];
+    const selectedPath = segments.length > 2 ? segments.slice(2).join("/") : undefined;
+    return <CodeView owner={owner} repo={repo} selectedPath={selectedPath} />;
+  }
 
   // Branches: /{owner}/{repo}/branches[/{filter}]
   if (segments.length >= 2 && segments[1] === "branches") {
@@ -30,16 +37,19 @@ export default async function DashboardPage({
     );
   }
 
+  const model = resolveNav(owner, segments);
   const here =
     model.header?.label ?? (model.context === "repo" ? (segments[0] ?? owner) : owner);
 
   return (
-    <div className="rounded-lg border border-dashed p-8 text-sm text-muted-foreground">
-      <div className="font-medium text-foreground">{here}</div>
-      <div className="mt-1">
-        Context: {model.context} · path: /{[owner, ...segments].join("/")}
+    <div className="p-4 md:p-6">
+      <div className="rounded-lg border border-dashed p-8 text-sm text-muted-foreground">
+        <div className="font-medium text-foreground">{here}</div>
+        <div className="mt-1">
+          Context: {model.context} · path: /{[owner, ...segments].join("/")}
+        </div>
+        <div className="mt-1">Content for this view lands in a later slice.</div>
       </div>
-      <div className="mt-1">Content for this view lands in a later slice.</div>
     </div>
   );
 }
