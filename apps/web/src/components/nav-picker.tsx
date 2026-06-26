@@ -29,9 +29,9 @@ export function NavPicker({
   children: React.ReactNode;
 }) {
   return (
-    <Command className="bg-transparent">
+    <Command className="flex-1 bg-transparent">
       <CommandInput placeholder={placeholder} autoFocus />
-      <CommandList>
+      <CommandList className="max-h-none min-h-0 flex-1">
         <CommandEmpty>{emptyText}</CommandEmpty>
         {children}
       </CommandList>
