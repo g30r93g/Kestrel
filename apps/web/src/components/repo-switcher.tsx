@@ -1,10 +1,11 @@
 "use client";
 
 import { NavPicker, NavPickerGroup, NavPickerItem } from "@/components/nav-picker";
+import { usePinnedRepos } from "@/hooks/use-pinned-repos";
 import type { Repo } from "@/lib/github";
 import { cn } from "@/lib/utils";
 import { Button } from "@base-ui/react";
-import { ChevronsUpDown, FolderGit2 } from "lucide-react";
+import { ChevronsUpDown, FolderGit2, Pin } from "lucide-react";
 
 // The pill at the top of the sidebar. Acts as a toggle for the repo list;
 // shows an active state while the list is open.
@@ -46,6 +47,48 @@ export function RepoList({
   activeRepo?: string;
   onNavigate: () => void;
 }) {
+  const { isPinned, toggle } = usePinnedRepos();
+  const pinKey = (name: string) => `${owner}/${name}`;
+
+  const pinned = repos.filter((r) => isPinned(pinKey(r.name)));
+  const others = repos.filter((r) => !isPinned(pinKey(r.name)));
+
+  const repoItem = (repo: Repo, index: number) => {
+    const pinnedState = isPinned(pinKey(repo.name));
+    return (
+      <NavPickerItem
+        key={repo.name}
+        index={index}
+        value={repo.name}
+        href={`/${owner}/${repo.name}`}
+        active={activeRepo === repo.name}
+        onNavigate={onNavigate}
+        action={
+          <button
+            type="button"
+            aria-label={pinnedState ? "Unpin repository" : "Pin repository"}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              toggle(pinKey(repo.name));
+            }}
+            className={cn(
+              "rounded p-0.5 text-muted-foreground transition-opacity hover:text-foreground",
+              pinnedState
+                ? "opacity-100"
+                : "opacity-0 group-hover/nav-item:opacity-100 focus-visible:opacity-100",
+            )}
+          >
+            <Pin className={cn("size-3.5", pinnedState && "fill-current")} />
+          </button>
+        }
+      >
+        {repo.name}
+      </NavPickerItem>
+    );
+  };
+
   return (
     <NavPicker placeholder="Search repositories…" emptyText="No repository found.">
       <NavPickerGroup>
@@ -58,19 +101,19 @@ export function RepoList({
         >
           All repositories
         </NavPickerItem>
-        {repos.map((repo, i) => (
-          <NavPickerItem
-            key={repo.name}
-            index={i + 1}
-            value={repo.name}
-            href={`/${owner}/${repo.name}`}
-            active={activeRepo === repo.name}
-            onNavigate={onNavigate}
-          >
-            {repo.name}
-          </NavPickerItem>
-        ))}
       </NavPickerGroup>
+
+      {pinned.length > 0 && (
+        <NavPickerGroup heading="Pinned">
+          {pinned.map((repo, i) => repoItem(repo, i + 1))}
+        </NavPickerGroup>
+      )}
+
+      {others.length > 0 && (
+        <NavPickerGroup heading={pinned.length > 0 ? "Repositories" : undefined}>
+          {others.map((repo, i) => repoItem(repo, pinned.length + i + 1))}
+        </NavPickerGroup>
+      )}
     </NavPicker>
   );
 }

@@ -62,6 +62,7 @@ export function NavPickerItem({
   active,
   index = 0,
   onNavigate,
+  action,
   children,
 }: {
   value: string;
@@ -69,6 +70,8 @@ export function NavPickerItem({
   active?: boolean;
   index?: number;
   onNavigate: () => void;
+  /** Optional trailing control (e.g. a pin toggle); should stop its own events. */
+  action?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const router = useRouter();
@@ -81,7 +84,7 @@ export function NavPickerItem({
         onNavigate();
         router.push(href);
       }}
-      className="gap-2"
+      className="group/nav-item gap-2"
     >
       <motion.span
         className="flex flex-1 items-center gap-2"
@@ -91,6 +94,7 @@ export function NavPickerItem({
       >
         {children}
       </motion.span>
+      {action}
     </CommandItem>
   );
 }
