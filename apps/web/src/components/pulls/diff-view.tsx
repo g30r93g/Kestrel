@@ -134,12 +134,12 @@ function TreeNode({ node, depth, expanded, onToggle }: {
         <button
           onClick={() => onToggle(node.path)}
           style={{ paddingLeft: `${8 + indent}px` }}
-          className="flex w-full items-center gap-1.5 rounded-md py-0.5 pr-2 text-xs transition-colors hover:bg-muted/60"
+          className="flex w-full items-center gap-1.5 rounded-md py-1 pr-2 text-sm transition-colors hover:bg-muted/60"
         >
-          <ChevronRight className={cn("size-3 shrink-0 text-muted-foreground transition-transform duration-100", isExpanded && "rotate-90")} />
+          <ChevronRight className={cn("size-3.5 shrink-0 text-muted-foreground transition-transform duration-150", isExpanded && "rotate-90")} />
           {isExpanded
-            ? <FolderOpen className="size-3.5 shrink-0 text-muted-foreground" />
-            : <Folder className="size-3.5 shrink-0 text-muted-foreground" />}
+            ? <FolderOpen className="size-4 shrink-0 text-muted-foreground" />
+            : <Folder className="size-4 shrink-0 text-muted-foreground" />}
           <span className="truncate">{node.name}</span>
         </button>
         {isExpanded && node.children.map((c) => (
@@ -152,16 +152,17 @@ function TreeNode({ node, depth, expanded, onToggle }: {
   const fileColor =
     node.file?.status === "added" ? "text-green-600" :
     node.file?.status === "removed" ? "text-red-500" :
-    node.file?.status === "renamed" ? "text-blue-500" :
+    node.file?.status === "renamed" || node.file?.status === "copied" ? "text-blue-500" :
+    node.file?.status === "modified" || node.file?.status === "changed" ? "text-orange-500" :
     "text-muted-foreground";
 
   return (
     <a
       href={`#${toAnchorId(node.path)}`}
       style={{ paddingLeft: `${8 + 14 + indent}px` }}
-      className="flex w-full items-center gap-1.5 rounded-md py-0.5 pr-2 text-xs transition-colors hover:bg-muted/60"
+      className="flex w-full items-center gap-1.5 rounded-md py-1 pr-2 text-sm transition-colors hover:bg-muted/60"
     >
-      <File className={cn("size-3.5 shrink-0", fileColor)} />
+      <File className={cn("size-4 shrink-0", fileColor)} />
       <span className="truncate">{node.name}</span>
     </a>
   );
@@ -284,7 +285,7 @@ function FilePatch({ file, mode }: { file: PatchFile; mode: DiffMode }) {
   const splitRows = mode === "split" ? toSplitRows(lines) : [];
 
   return (
-    <div id={toAnchorId(file.filename)} className="scroll-mt-12 rounded-lg border bg-card">
+    <div id={toAnchorId(file.filename)} className="scroll-mt-12 overflow-hidden rounded-lg border bg-card">
       <div className="flex items-center gap-3 px-4 py-3">
         <span className="min-w-0 flex-1 truncate font-mono text-xs">{file.filename}</span>
         <span className="shrink-0 text-xs text-green-600">+{file.additions}</span>
