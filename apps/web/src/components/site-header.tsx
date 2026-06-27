@@ -1,11 +1,11 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-import { Bell, Command, Plus } from "lucide-react";
+import { ModeToggle } from "@/components/mode-toggle";
+import { RefSelector } from "@/components/ref-selector";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { BranchSelector } from "@/components/branch-selector";
-import { ModeToggle } from "@/components/mode-toggle";
+import { Bell, Command, Plus } from "lucide-react";
+import { usePathname } from "next/navigation";
 
 export function SiteHeader() {
   const pathname = usePathname();
@@ -15,7 +15,7 @@ export function SiteHeader() {
     <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b">
       <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
         <SidebarTrigger className="-ml-1" />
-        {isCodeTab && <BranchSelector />}
+        {isCodeTab && <RefSelector />}
         <div className="ml-auto flex items-center gap-1">
           <Button variant="ghost" size="icon" aria-label="Command palette"><Command className="size-4" /></Button>
           <Button variant="ghost" size="icon" aria-label="Inbox"><Bell className="size-4" /></Button>
