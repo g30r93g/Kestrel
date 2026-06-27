@@ -70,6 +70,17 @@ export function RefSelector() {
   }, [owner, repo]);
 
   useEffect(() => {
+    const refkind = searchParams.get("refkind");
+    if (refkind === "tag") {
+      setSelectedKind("tags");
+      setMode("tags");
+    } else if (refkind === "branch") {
+      setSelectedKind("branches");
+      setMode("branches");
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
     if (!owner || !repo || mode !== "tags" || tagsLoaded) return;
     let cancelled = false;
     fetchTagNames(owner, repo).then((names) => {
@@ -89,6 +100,7 @@ export function RefSelector() {
     setOpen(false);
     setSelectedKind(mode);
     const next = new URLSearchParams(searchParams.toString());
+    next.delete("refkind");
     if (mode === "branches" && ref === defaultBranch) next.delete("ref");
     else next.set("ref", ref);
     const qs = next.toString();
