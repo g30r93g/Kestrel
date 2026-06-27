@@ -2,6 +2,7 @@
 
 import { fetchPullRequest, fetchPullRequestPatches, type PatchFile } from "@/lib/github/pulls";
 import { ReviewDraftProvider, ReviewDraftContext, useReviewDraft } from "@/components/pulls/review-draft-context";
+import { ReviewBar } from "@/components/pulls/review-bar";
 import { InlineCommentForm, PendingCommentRow } from "@/components/pulls/inline-comment-form";
 import type { PendingReviewComment } from "@/lib/github/types";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -578,6 +579,7 @@ interface DiffViewInnerProps {
   owner: string;
   repo: string;
   prNumber: number;
+  commitSha: string;
   mode: DiffMode;
   setMode: (m: DiffMode) => void;
   files: PatchFile[];
@@ -589,6 +591,7 @@ function DiffViewInner({
   owner,
   repo,
   prNumber,
+  commitSha,
   mode,
   setMode,
   files,
@@ -829,6 +832,14 @@ function DiffViewInner({
               />
             ))}
         </div>
+        {reviewMode && (
+          <ReviewBar
+            owner={owner}
+            repo={repo}
+            prNumber={prNumber}
+            commitSha={commitSha}
+          />
+        )}
       </div>
     </div>
     {reviewMode && textTooltip && (
@@ -901,6 +912,7 @@ export function DiffView({ owner, repo, prNumber }: DiffViewProps) {
         owner={owner}
         repo={repo}
         prNumber={prNumber}
+        commitSha={commitSha}
         mode={mode}
         setMode={setMode}
         files={files}
