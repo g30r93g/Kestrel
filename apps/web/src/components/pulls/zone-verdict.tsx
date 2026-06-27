@@ -87,6 +87,9 @@ export function ZoneVerdict({ pr, verdict, loading, error }: ZoneVerdictProps) {
   const [merging, setMerging] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [mergeError, setMergeError] = useState<string | null>(null);
+  const [closeError, setCloseError] = useState<string | null>(null);
+  const [reopenError, setReopenError] = useState<string | null>(null);
+  const [updateError, setUpdateError] = useState<string | null>(null);
   const undoAction = useUndoAction();
 
   const invalidatePR = () => {
@@ -113,7 +116,12 @@ export function ZoneVerdict({ pr, verdict, loading, error }: ZoneVerdictProps) {
 
   const handleClose = async () => {
     if (!owner || !repo || !prNumber) return;
-    await closePullRequest(owner, repo, prNumber);
+    setCloseError(null);
+    const result = await closePullRequest(owner, repo, prNumber);
+    if (!result.success) {
+      setCloseError(result.error ?? "Could not close PR");
+      return;
+    }
     invalidatePR();
     undoAction.trigger("PR closed", async () => {
       await reopenPullRequest(owner, repo, prNumber);
@@ -123,15 +131,25 @@ export function ZoneVerdict({ pr, verdict, loading, error }: ZoneVerdictProps) {
 
   const handleReopen = async () => {
     if (!owner || !repo || !prNumber) return;
-    await reopenPullRequest(owner, repo, prNumber);
+    setReopenError(null);
+    const result = await reopenPullRequest(owner, repo, prNumber);
+    if (!result.success) {
+      setReopenError(result.error ?? "Could not reopen PR");
+      return;
+    }
     invalidatePR();
   };
 
   const handleUpdateBranch = async () => {
     if (!owner || !repo || !prNumber) return;
     setUpdating(true);
-    await updateBranch(owner, repo, prNumber);
+    setUpdateError(null);
+    const result = await updateBranch(owner, repo, prNumber);
     setUpdating(false);
+    if (!result.success) {
+      setUpdateError(result.error ?? "Could not update branch");
+      return;
+    }
     mutate([owner, repo, prNumber, "pr"]);
   };
 
@@ -296,6 +314,14 @@ export function ZoneVerdict({ pr, verdict, loading, error }: ZoneVerdictProps) {
         </div>
       )}
 
+      {/* Inline errors for branch actions */}
+      {updateError && (
+        <p className="mt-2 text-xs text-destructive">{updateError}</p>
+      )}
+      {reopenError && (
+        <p className="mt-2 text-xs text-destructive">{reopenError}</p>
+      )}
+
       {/* Undo banner for close */}
       {undoAction.pending && (
         <div className="mt-3 flex items-center justify-between rounded-md bg-muted px-3 py-2 text-xs">
@@ -307,6 +333,9 @@ export function ZoneVerdict({ pr, verdict, loading, error }: ZoneVerdictProps) {
             Undo
           </button>
         </div>
+      )}
+      {closeError && (
+        <p className="mt-2 text-xs text-destructive">{closeError}</p>
       )}
     </div>
   );

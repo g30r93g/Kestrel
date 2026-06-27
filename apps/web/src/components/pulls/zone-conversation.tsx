@@ -34,6 +34,7 @@ export function ZoneConversation({ comments, loading, error }: ZoneConversationP
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [optimisticComment, setOptimisticComment] = useState<PRComment | null>(null);
+  const [undoError, setUndoError] = useState<string | null>(null);
   const undoAction = useUndoAction();
 
   const invalidate = () => {
@@ -65,7 +66,12 @@ export function ZoneConversation({ comments, loading, error }: ZoneConversationP
       undoAction.trigger("Comment added", async () => {
         if (!owner || !repo || !result.commentId) return;
         setOptimisticComment(null);
-        await deleteComment(owner, repo, result.commentId);
+        const deleteResult = await deleteComment(owner, repo, result.commentId);
+        if (!deleteResult.success) {
+          setUndoError("Could not delete comment — it may still appear.");
+          invalidate(); // re-fetch to show true state
+          return;
+        }
         invalidate();
       });
       // After undo window expires, refresh to get server-canonical state
@@ -158,6 +164,9 @@ export function ZoneConversation({ comments, loading, error }: ZoneConversationP
             Undo
           </button>
         </div>
+      )}
+      {undoError && (
+        <p className="mt-1 text-xs text-destructive">{undoError}</p>
       )}
 
       {/* Comment composer */}
