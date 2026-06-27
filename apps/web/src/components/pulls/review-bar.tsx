@@ -85,6 +85,16 @@ export function ReviewBar({ owner, repo, prNumber, commitSha, enabled = true }: 
     router.push(`/${owner}/${repo}/pulls/${prNumber}`);
   };
 
+  if (!commitSha) {
+    return (
+      <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-card/95 backdrop-blur">
+        <div className="flex items-center gap-3 px-4 py-3">
+          <span className="text-xs text-muted-foreground">Loading review…</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-card/95 backdrop-blur">
       <div className="flex items-center gap-3 px-4 py-3">

@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronToggle } from "@/components/ui/chevron-toggle";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { ArrowLeft, ChevronRight, File, Folder, FolderOpen, MessageSquarePlus } from "lucide-react";
+import { ArrowLeft, ChevronRight, File, Folder, FolderOpen, MessageSquare, MessageSquarePlus } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -476,8 +476,10 @@ function SplitDiff({ rows, reviewProps }: { rows: SplitRow[]; reviewProps?: File
 
 function FilePatchReviewHeader({
   filename,
+  onToggleOpen,
 }: {
   filename: string;
+  onToggleOpen: () => void;
 }) {
   const { draft, addComment, toggleFile } = useReviewDraft();
   const isReviewed = draft.markedFiles.includes(filename);
@@ -485,22 +487,23 @@ function FilePatchReviewHeader({
 
   return (
     <>
-      <label className="flex cursor-pointer select-none items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground">
-        <input
-          type="checkbox"
-          checked={isReviewed}
-          onChange={() => toggleFile(filename)}
-          className="size-3.5 accent-foreground"
-        />
-        Reviewed
-      </label>
       <button
         onClick={() => setShowFileComment((v) => !v)}
         aria-expanded={showFileComment}
         className="flex items-center gap-1 text-xs text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline"
       >
+        <MessageSquare className="size-3.5" />
         Add comment
       </button>
+      <label className="flex cursor-pointer select-none items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground">
+        <input
+          type="checkbox"
+          checked={isReviewed}
+          onChange={() => { toggleFile(filename); onToggleOpen(); }}
+          className="size-3.5 accent-foreground"
+        />
+        Reviewed
+      </label>
       {showFileComment && (
         <div className="absolute left-0 right-0 top-full z-10 border-t bg-card px-4 py-3 shadow-md">
           <InlineCommentForm
@@ -541,7 +544,7 @@ function FilePatch({
         <span className="shrink-0 text-xs text-green-600">+{file.additions}</span>
         <span className="shrink-0 text-xs text-red-500">−{file.deletions}</span>
         {reviewMode && fileReviewProps && (
-          <FilePatchReviewHeader filename={file.filename} />
+          <FilePatchReviewHeader filename={file.filename} onToggleOpen={() => setOpen((v) => !v)} />
         )}
         <button
           onClick={() => setOpen((v) => !v)}
@@ -554,8 +557,8 @@ function FilePatch({
       {pendingFileLevelComments.length > 0 && (
         <PendingCommentRow
           comments={pendingFileLevelComments}
-          onUpdate={fileReviewProps!.onUpdateComment}
-          onRemove={fileReviewProps!.onRemoveComment}
+          onUpdate={fileReviewProps?.onUpdateComment ?? (() => {})}
+          onRemove={fileReviewProps?.onRemoveComment ?? (() => {})}
         />
       )}
       {open && (

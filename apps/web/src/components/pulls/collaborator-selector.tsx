@@ -30,7 +30,7 @@ export function CollaboratorSelector({
 
   const { data: collaborators = [], isLoading } = useSWR(
     [owner, repo, "collaborators"],
-    ([o, r]: [string, string]) => fetchCollaborators(o, r),
+    ([o, r]: [string, string, string]) => fetchCollaborators(o, r),
   );
 
   const filtered = useMemo(() => {
