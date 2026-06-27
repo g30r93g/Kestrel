@@ -19,14 +19,17 @@ interface ReviewBarProps {
   repo: string;
   prNumber: number;
   commitSha: string;
+  enabled?: boolean;
 }
 
-export function ReviewBar({ owner, repo, prNumber, commitSha }: ReviewBarProps) {
+export function ReviewBar({ owner, repo, prNumber, commitSha, enabled = true }: ReviewBarProps) {
   const { draft, setBody, clearDraft } = useReviewDraft();
   const router = useRouter();
   const [event, setEvent] = useState<ReviewEvent>("COMMENT");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  if (!enabled) return null;
 
   const lineComments = draft.comments.filter((c) => !c.isFileLevel);
   const fileComments = draft.comments.filter((c) => c.isFileLevel);
@@ -67,8 +70,15 @@ export function ReviewBar({ owner, repo, prNumber, commitSha }: ReviewBarProps) 
     }
 
     // Post file-level comments sequentially (not part of createReview batch)
+    const fileErrors: string[] = [];
     for (const fc of fileComments) {
-      await createFileComment(owner, repo, prNumber, commitSha, fc.path, fc.body);
+      const fcResult = await createFileComment(owner, repo, prNumber, commitSha, fc.path, fc.body);
+      if (!fcResult.success) fileErrors.push(fc.path);
+    }
+    if (fileErrors.length > 0) {
+      setSubmitting(false);
+      setError(`Review submitted but ${fileErrors.length} file comment(s) failed: ${fileErrors.join(", ")}`);
+      return;
     }
 
     clearDraft();
