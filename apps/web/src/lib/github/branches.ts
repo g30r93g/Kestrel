@@ -2,13 +2,10 @@
 
 import { getOctokit } from "./client";
 
-// Server action: the branch list for a repo plus its default branch. Returns
-// empty on failure (missing access/scope) so the selector degrades gracefully.
 export async function fetchBranches(
   owner: string,
   repo: string,
 ): Promise<{ branches: string[]; defaultBranch: string }> {
-  // getOctokit() may redirect on a missing token — keep it outside the try.
   const octokit = await getOctokit();
 
   try {
@@ -16,10 +13,37 @@ export async function fetchBranches(
       octokit.rest.repos.get({ owner, repo }),
       octokit.rest.repos.listBranches({ owner, repo, per_page: 100 }),
     ]);
-    return {
-      branches: branchData.map((b) => b.name),
-      defaultBranch: repoData.default_branch,
-    };
+
+    const defaultBranch = repoData.default_branch;
+
+    // Fetch last commit date for each branch using the lightweight git object
+    // endpoint (no diff payload). allSettled so one failure doesn't drop all.
+    const withDates = await Promise.allSettled(
+      branchData.map(async (b) => {
+        const { data } = await octokit.rest.git.getCommit({
+          owner,
+          repo,
+          commit_sha: b.commit.sha,
+        });
+        return { name: b.name, date: data.committer.date };
+      }),
+    );
+
+    const dated = withDates.map((r, i) =>
+      r.status === "fulfilled"
+        ? r.value
+        : { name: branchData[i].name, date: "" },
+    );
+
+    const nonDefault = dated
+      .filter((b) => b.name !== defaultBranch)
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .map((b) => b.name);
+
+    const hasDefault = branchData.some((b) => b.name === defaultBranch);
+    const branches = hasDefault ? [defaultBranch, ...nonDefault] : nonDefault;
+
+    return { branches, defaultBranch };
   } catch {
     return { branches: [], defaultBranch: "" };
   }

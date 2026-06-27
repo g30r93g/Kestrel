@@ -11,7 +11,6 @@ import {
   LayoutDashboard,
   LayoutGrid,
   Package,
-  Rocket,
   Settings,
   Tag,
   Users,
@@ -105,8 +104,7 @@ export const repoGroups: NavGroup[] = [
         leaf("active", "Active", GitBranch),
         leaf("stale", "Stale", GitBranch),
       ]),
-      leaf("tags", "Tags", Tag),
-      leaf("releases", "Releases", Rocket),
+      leaf("releases", "Tags & Releases", Tag),
     ],
   },
   {

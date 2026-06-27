@@ -80,3 +80,41 @@ export interface BlameRange {
   prNumber?: number;
   prTitle?: string;
 }
+
+export interface ReleaseAsset {
+  id: number;
+  name: string;
+  size: number;
+  downloadCount: number;
+  downloadUrl: string;
+}
+
+export interface TagsAndReleasesItem {
+  name: string;
+  sha: string;
+  kind: "annotated" | "lightweight";
+  message: string;
+  tagger: {
+    name: string;
+    login: string;
+    avatarUrl: string;
+    date: string;
+  };
+  zipballUrl: string;
+  tarballUrl: string;
+  release: {
+    id: number;
+    title: string;
+    body: string;
+    htmlUrl: string;
+    isDraft: boolean;
+    isPrerelease: boolean;
+    isLatest: boolean;
+    publishedAt: string;
+    author: {
+      login: string;
+      avatarUrl: string;
+    };
+    assets: ReleaseAsset[];
+  } | null;
+}
