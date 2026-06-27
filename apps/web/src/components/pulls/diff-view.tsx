@@ -358,7 +358,6 @@ interface DiffViewInnerProps {
   files: PatchFile[];
   isLoading: boolean;
   reviewMode: boolean;
-  commitSha: string;
 }
 
 function DiffViewInner({
@@ -370,7 +369,6 @@ function DiffViewInner({
   files,
   isLoading,
   reviewMode,
-  commitSha,
 }: DiffViewInnerProps) {
   // Always call useContext — never conditional. When ReviewDraftProvider is
   // disabled (enabled=false) it renders children without providing a value,
@@ -577,7 +575,6 @@ export function DiffView({ owner, repo, prNumber }: DiffViewProps) {
         files={files}
         isLoading={isLoading}
         reviewMode={reviewMode}
-        commitSha={commitSha}
       />
     </ReviewDraftProvider>
   );
