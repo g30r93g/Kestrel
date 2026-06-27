@@ -10,6 +10,8 @@ import {
   GitMerge,
   GitPullRequest,
   GitPullRequestClosed,
+  Pencil,
+  Save,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -167,16 +169,18 @@ export function ZoneIdentity({ pr, loading, error }: ZoneIdentityProps) {
             {editMode ? (
               <button
                 onClick={handleSave}
-                className="text-xs text-foreground underline-offset-2 transition-colors hover:text-muted-foreground hover:underline"
+                className="flex items-center gap-1 text-xs text-foreground underline-offset-2 transition-colors hover:text-muted-foreground hover:underline"
               >
+                <Save className="size-3.5" />
                 Save
               </button>
             ) : (
               <button
                 onClick={handleEdit}
                 disabled={saving}
-                className="text-xs text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline disabled:opacity-40"
+                className="flex items-center gap-1 text-xs text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline disabled:opacity-40"
               >
+                <Pencil className="size-3.5" />
                 {saving ? "Saving…" : "Edit"}
               </button>
             )}
