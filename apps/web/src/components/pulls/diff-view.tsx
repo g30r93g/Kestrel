@@ -252,25 +252,26 @@ function UnifiedDiff({ lines, reviewProps }: { lines: ParsedLine[]; reviewProps?
     const rightSel =
       !!reviewProps && sel?.side === "RIGHT" && rightNum !== undefined && rightNum >= selMin && rightNum <= selMax;
 
-    const makeGutter = (num: number | undefined, side: "LEFT" | "RIGHT", extra?: string) => (
-      <span
-        className={cn(
-          NUM,
-          extra,
-          reviewProps && num !== undefined && "cursor-pointer hover:bg-blue-100/60 dark:hover:bg-blue-900/20",
-          (side === "LEFT" ? leftSel : rightSel) && "bg-blue-200/70 dark:bg-blue-800/50",
-        )}
-        data-line={num}
-        data-side={side}
-        onClick={
-          reviewProps && num !== undefined
-            ? (e) => reviewProps.onLineClick(num, side, e.shiftKey)
-            : undefined
-        }
-      >
-        {num}
-      </span>
-    );
+    const makeGutter = (num: number | undefined, side: "LEFT" | "RIGHT", extra?: string) => {
+      const cls = cn(
+        NUM,
+        extra,
+        reviewProps && num !== undefined && "cursor-pointer hover:bg-blue-100/60 dark:hover:bg-blue-900/20",
+        (side === "LEFT" ? leftSel : rightSel) && "bg-blue-200/70 dark:bg-blue-800/50",
+      );
+      if (reviewProps && num !== undefined) {
+        return (
+          <button
+            type="button"
+            className={cls}
+            onClick={(e) => reviewProps.onLineClick(num, side, e.shiftKey)}
+          >
+            {num}
+          </button>
+        );
+      }
+      return <span className={cls}>{num}</span>;
+    };
 
     const rowBg =
       line.type === "add"
@@ -289,7 +290,7 @@ function UnifiedDiff({ lines, reviewProps }: { lines: ParsedLine[]; reviewProps?
     elems.push(
       <div
         key={`l${i}`}
-        className={cn("flex", rowBg, (leftSel || rightSel) && "ring-1 ring-inset ring-blue-300/60 dark:ring-blue-600/40")}
+        className={cn("flex", rowBg, (leftSel || rightSel) && "bg-blue-50 dark:bg-blue-950/40")}
       >
         {makeGutter(leftNum, "LEFT", line.type === "remove" ? "bg-red-100/60 dark:bg-red-900/40" : undefined)}
         {makeGutter(rightNum, "RIGHT", line.type === "add" ? "bg-green-100/60 dark:bg-green-900/40" : undefined)}
@@ -368,25 +369,26 @@ function SplitDiff({ rows, reviewProps }: { rows: SplitRow[]; reviewProps?: File
     const isOldChange = row.type === "change" && row.oldContent !== undefined;
     const isNewChange = row.type === "change" && row.newContent !== undefined;
 
-    const makeGutter = (num: number | undefined, side: "LEFT" | "RIGHT", isChange: boolean) => (
-      <span
-        className={cn(
-          NUM,
-          isChange && (side === "LEFT" ? "bg-red-100/60 dark:bg-red-900/40" : "bg-green-100/60 dark:bg-green-900/40"),
-          reviewProps && num !== undefined && "cursor-pointer hover:bg-blue-100/60 dark:hover:bg-blue-900/20",
-          (side === "LEFT" ? leftSel : rightSel) && "bg-blue-200/70 dark:bg-blue-800/50",
-        )}
-        data-line={num}
-        data-side={side}
-        onClick={
-          reviewProps && num !== undefined
-            ? (e) => reviewProps.onLineClick(num, side, e.shiftKey)
-            : undefined
-        }
-      >
-        {num ?? ""}
-      </span>
-    );
+    const makeGutter = (num: number | undefined, side: "LEFT" | "RIGHT", isChange: boolean) => {
+      const cls = cn(
+        NUM,
+        isChange && (side === "LEFT" ? "bg-red-100/60 dark:bg-red-900/40" : "bg-green-100/60 dark:bg-green-900/40"),
+        reviewProps && num !== undefined && "cursor-pointer hover:bg-blue-100/60 dark:hover:bg-blue-900/20",
+        (side === "LEFT" ? leftSel : rightSel) && "bg-blue-200/70 dark:bg-blue-800/50",
+      );
+      if (reviewProps && num !== undefined) {
+        return (
+          <button
+            type="button"
+            className={cls}
+            onClick={(e) => reviewProps.onLineClick(num, side, e.shiftKey)}
+          >
+            {num}
+          </button>
+        );
+      }
+      return <span className={cls}>{num ?? ""}</span>;
+    };
 
     elems.push(
       <div key={`l${i}`} className="flex min-w-0">
@@ -394,7 +396,7 @@ function SplitDiff({ rows, reviewProps }: { rows: SplitRow[]; reviewProps?: File
           className={cn(
             "flex min-w-0 flex-1 overflow-x-auto",
             isOldChange && "bg-red-50 dark:bg-red-950/40",
-            leftSel && "ring-1 ring-inset ring-blue-300/60 dark:ring-blue-600/40",
+            leftSel && "bg-blue-50 dark:bg-blue-950/40",
           )}
         >
           {makeGutter(row.oldLine, "LEFT", isOldChange)}
@@ -412,7 +414,7 @@ function SplitDiff({ rows, reviewProps }: { rows: SplitRow[]; reviewProps?: File
           className={cn(
             "flex min-w-0 flex-1 overflow-x-auto",
             isNewChange && "bg-green-50 dark:bg-green-950/40",
-            rightSel && "ring-1 ring-inset ring-blue-300/60 dark:ring-blue-600/40",
+            rightSel && "bg-blue-50 dark:bg-blue-950/40",
           )}
         >
           {makeGutter(row.newLine, "RIGHT", isNewChange)}
