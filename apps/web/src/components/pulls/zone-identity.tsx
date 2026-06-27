@@ -162,7 +162,7 @@ export function ZoneIdentity({ pr, loading, error }: ZoneIdentityProps) {
 
       {/* Body — accordion */}
       {(bodyExpanded || editMode) && (
-        <div className="mt-3 border-t pt-3 pl-8">
+        <div className="mt-3 border-t pt-3">
           <div className="mb-2 flex justify-end">
             {editMode ? (
               <button
@@ -181,21 +181,23 @@ export function ZoneIdentity({ pr, loading, error }: ZoneIdentityProps) {
               </button>
             )}
           </div>
-          {editMode ? (
-            <textarea
-              value={draftBody}
-              onChange={(e) => setDraftBody(e.target.value)}
-              className="w-full resize-y rounded-md border bg-background px-3 py-2 font-mono text-sm leading-relaxed text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-              style={{ minHeight: "120px" }}
-              placeholder="Leave a description…"
-            />
-          ) : displayBody ? (
-            <div className={`prose prose-sm dark:prose-invert max-w-none text-sm${optimisticBody !== null ? " opacity-60" : ""}`}>
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayBody}</ReactMarkdown>
-            </div>
-          ) : (
-            <p className="text-xs text-muted-foreground">No description.</p>
-          )}
+          <div className="pl-8">
+            {editMode ? (
+              <textarea
+                value={draftBody}
+                onChange={(e) => setDraftBody(e.target.value)}
+                className="w-full resize-y rounded-md border bg-background px-3 py-2 font-mono text-sm leading-relaxed text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                style={{ minHeight: "120px" }}
+                placeholder="Leave a description…"
+              />
+            ) : displayBody ? (
+              <div className={`prose prose-sm dark:prose-invert max-w-none text-sm${optimisticBody !== null ? " opacity-60" : ""}`}>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayBody}</ReactMarkdown>
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">No description.</p>
+            )}
+          </div>
         </div>
       )}
 
