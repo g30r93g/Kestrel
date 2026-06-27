@@ -373,6 +373,180 @@ When a viewer lacks permission, **edit chrome is omitted entirely** (no greyed b
 
 ---
 
+## PR creation flow
+
+### Overview
+
+Creation is the one PR action that exists before a PR has a number, so it cannot live inside the number-scoped dashboard. The entry point is inside the switcher popover because "start a new PR" and "jump to another PR" are the same mental gesture: *change which PR I'm looking at.* The switcher is the canonical "PR context" control; creation is just selecting a PR that does not exist yet.
+
+**Responsibility split:**
+- The **switcher popover** owns the *intent* (`+ New pull request`) and the first, highest-friction decision (base ← head) inline — branch pairing is a *selection* gesture native to the popover idiom.
+- A **dedicated route** (`/[owner]/[repo]/pulls/new`) owns the *form* — the full creation surface is too rich, too tall, and too important-to-deep-link for a popover or drawer.
+
+### Entry point — `+ New pull request`
+
+A pinned action row at the very top of the popover, above the search field and tab strip, separated by a divider. It is visually distinct from list items (leading `+`, accent-tinted on hover). It is **not** a `CommandItem` — it is never filtered out by the search query, never keyboard-selected as a PR, and never scrolls away.
+
+```
+[⎇ #125 Fix auth bug ▾]
+┌───────────────────────────────┐
+│  + New pull request           │ ← pinned, accent, never filtered
+├───────────────────────────────┤
+│ 🔍  Search pull requests...   │
+├─── Open ──── Merged ── Draft ─┤
+│ ✓ #125  Fix auth bug          │
+│   #124  Add dark mode         │
+│   #122  Refactor API client   │
+│ ───────────────────────────── │
+│   #121  Update dependencies   │
+└───────────────────────────────┘
+```
+
+### Step 0 — Inline branch-pairing gate (in popover)
+
+Clicking `+ New pull request` **replaces the popover body** with a branch-pairing step. It does not immediately route anywhere. Rationale: branch pairing is a selection gesture; inline mode-swap is already the house idiom (`RefSelector` swaps branch/tag modes via `ToggleGroup`). A user who clicks `+`, sees "nothing to compare," and backs out pays zero navigation cost.
+
+Two `<BranchPicker>` selectors (base ← head). On every valid pair a lightweight compare probe fires (`GET /compare/base...head`). Outcomes:
+
+- **Ahead-by ≥ 1:** shows a one-line summary and enables `Continue →`.
+- **Ahead-by 0:** "Nothing to compare — head is up to date with base." `Continue` disabled.
+- **Head already has an open PR:** inline warning with a jump link to the existing PR. Creation not hard-blocked but default action becomes "open the existing one."
+
+`Continue →` closes the popover and routes to `/[owner]/[repo]/pulls/new?base=…&head=…`.
+
+```
+┌───────────────────────────────┐
+│ ←  New pull request           │
+├───────────────────────────────┤
+│  base  [⎇ main          ▾]    │
+│  head  [⎇ feat/auth-fix ▾]    │
+├───────────────────────────────┤
+│  ✓ 12 commits · 8 files       │
+│    +340  −52  · mergeable     │
+│                               │
+│            [ Continue → ]     │
+└───────────────────────────────┘
+```
+
+Dead-end and duplicate-PR variants:
+
+```
+│  ⓘ Nothing to compare —       │      │  ⚠ feat/auth-fix already has  │
+│    head is up to date.         │      │    an open PR:                │
+│            [ Continue → ]  ✗  │      │    → #124 Add dark mode [Open] │
+│                               │      │       [ Continue anyway ]      │
+```
+
+### The creation route — `/[owner]/[repo]/pulls/new`
+
+A dedicated full route parameterised by query string (`?base=main&head=feat/x`). The `?base`/`?head` params make the route reentrant — the popover pre-fills them, but the URL can also be constructed directly (e.g., a future "Create PR" button on the code view passes `?ref` as head).
+
+The route is laid out as a **"pre-PR dashboard"** — an editable echo of the dashboard the author is about to publish. It reuses the full-width column and the Zone A identity strip in editable mode. The comparison summary band stands in for Zones C/D/E. Zones B/F/G/H/I have no pre-creation analogue and are absent.
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  New pull request                              [Cancel]       │
+├──────────────────────────────────────────────────────────────┤
+│  base [⎇ main ▾]  ←  head [⎇ feat/auth-fix ▾]               │ ← editable, re-probes live
+│                                                              │
+│  ┌── Comparison ─────────────────────────────────────────┐  │
+│  │ ✓ Able to merge · 12 commits · 8 files · +340 −52     │  │
+│  │ ▸ Preview diff                                         │  │ ← collapsed
+│  └───────────────────────────────────────────────────────┘  │
+│                                                              │
+│  Title                                                       │
+│  [ Auth fix___________________________________________ ]     │ ← auto-seeded
+│                                                              │
+│  Description                  [ Write | Preview ]            │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │ ## Summary                                            │  │ ← PR template pre-loaded
+│  │ ## Testing                                            │  │
+│  └───────────────────────────────────────────────────────┘  │
+│                                                              │
+│  ── Metadata (mirrors Zone A) ──────────────────────────    │
+│  Reviewers  [+ add]      Assignees  [+ add]                  │
+│  Labels     [+ add]      Milestone  [+ none]                 │
+│  Project    [+ none]     Linked issues [+ add]               │
+│                                                              │
+│  ── Publish ─────────────────────────────────────────────   │
+│  ( • Ready for review )  ( Create as draft )                 │
+│                                                              │
+│                       [ Cancel ]  [ Create pull request ]    │
+└──────────────────────────────────────────────────────────────┘
+```
+
+"Preview diff" expansion reuses the same diff component as `/[number]/diff`, mounted read-only and collapsed by default:
+
+```
+│  ▾ Preview diff                                              │
+│  ┌──────────────────┬─────────────────────────────────────┐ │
+│  │ src/auth.ts   +88│  - const t = getToken()             │ │
+│  │ src/login.ts  +40│  + const t = await getToken()       │ │
+│  │ api/client.ts −18│  + if (!t) throw new AuthError      │ │
+│  │ test/auth…    +52│  …                                   │ │
+│  └──────────────────┴─────────────────────────────────────┘ │
+```
+
+### Form field order and rationale
+
+Order is by commitment cost and editing frequency. Irreversible/expensive-to-change things first; set-and-forget metadata follows; publish decision last, nearest the submit button.
+
+1. **Comparison header** (locked but editable — editing re-probes live)
+2. **Comparison summary band** — commits/files/±lines, mergeability, collapsible diff preview
+3. **Title** — auto-seeded from head's single commit message or humanised branch name
+4. **Description** — markdown editor with write/preview toggle; PR template pre-loaded if present
+5. **Metadata strip** — Reviewers, Assignees, Labels, Milestone, Project, Linked issues
+6. **Draft toggle** — `Ready for review` / `Create as draft` segmented control
+7. **Submit** — label bound to toggle: "Create pull request" / "Create draft pull request"
+
+**Merge method is not collected at creation.** It is a Zone B (Verdict) decision made at merge time, often by a different person. Collecting it at creation would be premature state that branch-protection rules may override anyway.
+
+**Why a single form, not a wizard:** after the branch-pair gate, every remaining field is independent and non-sequential. Wizardising independent fields adds clicks and hides the whole from the author.
+
+### Integration with existing components
+
+**`RefSelector` → `<BranchPicker>` core**
+
+Extract a headless `<BranchPicker>` from `RefSelector`: the popover + cmdk list + `fetchBranches` loading + search. Both consumers wrap it:
+- `RefSelector` = `<BranchPicker onSelect={routeWithRef} />` — unchanged, branches and tags.
+- Creation = two `<BranchPicker onSelect={setBase/setHead} branchesOnly />` instances — branches only (no PRs from tags), `ToggleGroup` omitted, `defaultBranch` auto-selects base.
+
+**Metadata strip ⇄ Zone A**
+
+The creation form's metadata strip and Zone A are **the same component in two modes**: `editable` (creation) and `display-with-inline-edit` (dashboard). Same field order, same chip rendering, same pickers. What the author arranges during creation is pixel-identical to what Zone A shows a second later.
+
+**Landing after creation**
+
+1. **Route-replace** (not push) to the new PR's dashboard `/[owner]/[repo]/pulls/[newNumber]`. Back returns to the launch origin, not the stale `/new` form.
+2. **Optimistically insert** the new PR at the top of the switcher's Open/Draft tab and mark it current, before the server list refetches.
+3. Dashboard mounts in normal state — Zone B shows "Checks pending / no reviews yet." No special "just created" chrome.
+
+### Edge cases
+
+| Case | Behaviour |
+|---|---|
+| Nothing to compare | Caught at popover gate. Continue disabled. User never reaches `/new`. |
+| Head already has an open PR | Caught at gate. Inline warning with jump link. Creation not blocked but default action is "open existing." |
+| PR template present | Detected during route transition. Single template → pre-loaded into description. Multiple → template chooser chips above empty editor. Template load never overwrites text already typed. |
+| Cross-fork PR | In scope. A repo/fork selector adjacent to the base picker switches scope. Default is same-repo; fork scope is a disclosed extension. |
+| Branch doesn't exist yet | Out of scope. `<BranchPicker>` list is authoritative — if not in the list, not selectable. |
+| Permission / protected base | Gate allows reaching the form. Server rejection surfaced inline on submit rather than guessing at branch protection client-side. |
+
+### Actions during creation
+
+| Action | Behaviour |
+|---|---|
+| **Cancel** | Router back. Confirmation prompt only if form is dirty beyond auto-seeded defaults. |
+| **Edit branch pair** | Inline in comparison header; re-probes and updates summary/diff live. No "back to step 0." |
+| **Preview description** | Write/Preview toggle on description editor. |
+| **Preview diff** | Collapsible disclosure in comparison band. |
+| **Toggle draft** | Segmented control; rebinds submit button label. |
+| **Submit** | On success → route-replace to new PR dashboard + optimistic switcher insert. On rejection → inline error, form state preserved. |
+
+**Autosave:** branch pair is the URL (`?base&head`) — persistent across refresh and shareable. Title/description/metadata are autosaved to local draft state keyed by `owner/repo/base/head` and restored on refresh. Local draft clears on successful create or explicit Cancel-with-discard. Named distinctly from "Create as draft" (the GitHub-level PR state) in all UI copy.
+
+---
+
 ## Live dashboard state changes
 
 Every mutating action feeds back into the dashboard without a page reload:
