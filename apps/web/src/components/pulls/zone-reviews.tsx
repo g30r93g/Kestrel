@@ -39,6 +39,12 @@ const STATE_LABEL: Record<PRReview["state"], string> = {
 
 type ReviewEvent = "APPROVE" | "REQUEST_CHANGES" | "COMMENT";
 
+const EVENT_BUTTONS: { value: ReviewEvent; label: string }[] = [
+  { value: "APPROVE", label: "Approve" },
+  { value: "REQUEST_CHANGES", label: "Request changes" },
+  { value: "COMMENT", label: "Comment" },
+];
+
 export interface ZoneReviewsProps {
   reviews: PRReview[];
   loading: boolean;
@@ -60,6 +66,7 @@ export function ZoneReviews({ reviews, loading, error }: ZoneReviewsProps) {
   const [submitting, setSubmitting] = useState(false);
   const [requestSubmitting, setRequestSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [requestError, setRequestError] = useState<string | null>(null);
 
   const invalidate = () => {
     if (!owner || !repo || !prNumber) return;
@@ -90,12 +97,16 @@ export function ZoneReviews({ reviews, loading, error }: ZoneReviewsProps) {
   const handleRequestReviewer = async () => {
     if (!owner || !repo || !prNumber || !requestLogin.trim()) return;
     setRequestSubmitting(true);
+    setRequestError(null);
     const result = await requestReview(owner, repo, prNumber, [requestLogin.trim()]);
     setRequestSubmitting(false);
     if (result.success) {
       setRequestLogin("");
+      setRequestError(null);
       setShowRequestForm(false);
       invalidate();
+    } else {
+      setRequestError(result.error ?? "Request failed");
     }
   };
 
@@ -114,12 +125,6 @@ export function ZoneReviews({ reviews, loading, error }: ZoneReviewsProps) {
   }
   const automatedReviews = [...latestAutomated.values()];
 
-  const EVENT_BUTTONS: { value: ReviewEvent; label: string }[] = [
-    { value: "APPROVE", label: "Approve" },
-    { value: "REQUEST_CHANGES", label: "Request changes" },
-    { value: "COMMENT", label: "Comment" },
-  ];
-
   return (
     <div className="rounded-lg border bg-card p-4">
       {/* Header with action buttons */}
@@ -127,14 +132,14 @@ export function ZoneReviews({ reviews, loading, error }: ZoneReviewsProps) {
         <h2 className="text-sm font-medium">Reviews</h2>
         <div className="flex items-center gap-3">
           <button
-            onClick={() => { setShowRequestForm((v) => !v); setShowReviewForm(false); }}
+            onClick={() => { setShowRequestForm((v) => !v); setShowReviewForm(false); setRequestError(null); }}
             className="flex items-center gap-1 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline transition-colors"
           >
             <UserPlus className="size-3.5" />
             Request reviewer
           </button>
           <button
-            onClick={() => { setShowReviewForm((v) => !v); setShowRequestForm(false); }}
+            onClick={() => { setShowReviewForm((v) => !v); setShowRequestForm(false); setFormError(null); }}
             className="flex items-center gap-1 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline transition-colors"
           >
             <PenLine className="size-3.5" />
@@ -206,6 +211,7 @@ export function ZoneReviews({ reviews, loading, error }: ZoneReviewsProps) {
               {requestSubmitting ? <Loader2 className="size-3.5 animate-spin" /> : "Add"}
             </Button>
           </div>
+          {requestError && <p className="text-xs text-destructive">{requestError}</p>}
         </div>
       )}
 
@@ -217,7 +223,7 @@ export function ZoneReviews({ reviews, loading, error }: ZoneReviewsProps) {
             {EVENT_BUTTONS.map((btn) => (
               <button
                 key={btn.value}
-                onClick={() => setReviewEvent(btn.value)}
+                onClick={() => { setReviewEvent(btn.value); setFormError(null); }}
                 className={[
                   "flex-1 rounded-md border px-2 py-1 text-xs transition-colors",
                   reviewEvent === btn.value
