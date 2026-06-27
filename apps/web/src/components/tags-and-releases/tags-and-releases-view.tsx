@@ -1,18 +1,20 @@
 "use client";
 
 import useSWR from "swr";
+import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Accordion as AccordionPrimitive } from "@base-ui/react/accordion";
 import {
-  ChevronDown,
-  ChevronUp,
+  Code,
   Download,
   ExternalLink,
   FileArchive,
   Package,
   Tag,
 } from "lucide-react";
+import Link from "next/link";
+import { ChevronToggle } from "@/components/ui/chevron-toggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -138,6 +140,7 @@ function RowContent({ item }: { item: TagsAndReleasesItem }) {
         <div className="mt-1.5 flex items-center gap-2 text-xs text-muted-foreground">
           <TaggerAvatar item={item} />
           {item.tagger.date && <span>{formatTimeAgo(item.tagger.date)}</span>}
+          <span className="font-mono">{item.sha.slice(0, 7)}</span>
         </div>
       </div>
     </>
@@ -207,13 +210,36 @@ function ReleasePanel({
 
 // ─── List items ───────────────────────────────────────────────────────────────
 
-function ReleasedTagRow({ item }: { item: TagsAndReleasesItem }) {
+function CodeButton({ item, owner, repo }: { item: TagsAndReleasesItem; owner: string; repo: string }) {
   return (
-    <AccordionPrimitive.Item value={item.name} className="group/item">
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Link
+              href={`/${owner}/${repo}/code?ref=${encodeURIComponent(item.name)}&refkind=tag`}
+              className="flex items-center rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+            />
+          }
+        >
+          <Code className="size-3.5" />
+        </TooltipTrigger>
+        <TooltipContent>Browse code at this tag</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+function ReleasedTagRow({ item, owner, repo }: { item: TagsAndReleasesItem; owner: string; repo: string }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <AccordionPrimitive.Item value={item.name} className="group/item" onOpenChange={setOpen}>
       <div className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-muted/40">
         <RowContent item={item} />
 
         <div className="flex shrink-0 items-center gap-1">
+          <CodeButton item={item} owner={owner} repo={repo} />
           <DownloadButtons item={item} />
           <TooltipProvider>
             <Tooltip>
@@ -234,9 +260,8 @@ function ReleasedTagRow({ item }: { item: TagsAndReleasesItem }) {
           </TooltipProvider>
 
           <AccordionPrimitive.Header render={<span className="contents" />}>
-            <AccordionPrimitive.Trigger className="group/chevron flex items-center rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-              <ChevronDown className="size-3.5 pointer-events-none group-aria-expanded/chevron:hidden" />
-              <ChevronUp className="size-3.5 hidden pointer-events-none group-aria-expanded/chevron:inline" />
+            <AccordionPrimitive.Trigger className="flex items-center rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              <ChevronToggle open={open} className="size-3.5" />
             </AccordionPrimitive.Trigger>
           </AccordionPrimitive.Header>
         </div>
@@ -251,11 +276,12 @@ function ReleasedTagRow({ item }: { item: TagsAndReleasesItem }) {
   );
 }
 
-function BareTagRow({ item }: { item: TagsAndReleasesItem }) {
+function BareTagRow({ item, owner, repo }: { item: TagsAndReleasesItem; owner: string; repo: string }) {
   return (
     <div className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-muted/40">
       <RowContent item={item} />
-      <div className="flex shrink-0 items-center">
+      <div className="flex shrink-0 items-center gap-1">
+        <CodeButton item={item} owner={owner} repo={repo} />
         <DownloadButtons item={item} />
       </div>
     </div>
@@ -329,12 +355,12 @@ export function TagsAndReleasesView({
         >
           {items.map((item) =>
             item.release ? (
-              <ReleasedTagRow key={item.name} item={item} />
+              <ReleasedTagRow key={item.name} item={item} owner={owner} repo={repo} />
             ) : (
               // BareTagRow is not an AccordionItem, so wrap in a div that
               // carries the same border-b behaviour as AccordionItem does.
               <div key={item.name}>
-                <BareTagRow item={item} />
+                <BareTagRow item={item} owner={owner} repo={repo} />
               </div>
             ),
           )}
