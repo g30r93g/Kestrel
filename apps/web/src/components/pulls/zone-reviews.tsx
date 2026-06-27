@@ -1,13 +1,12 @@
 "use client";
 
 import type { PRReview } from "@/lib/github/types";
-import { requestReview } from "@/lib/github/pulls-actions";
+import { CollaboratorSelector } from "@/components/pulls/collaborator-selector";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatTimeAgo } from "@/lib/time";
 import {
   CheckCircle2,
   CircleDot,
-  Loader2,
   MessageSquare,
   PenLine,
   UserPlus,
@@ -50,9 +49,6 @@ export function ZoneReviews({ reviews, loading, error }: ZoneReviewsProps) {
   const prNumber = params.rest?.[2] ? parseInt(params.rest[2], 10) : undefined;
 
   const [showRequestForm, setShowRequestForm] = useState(false);
-  const [requestLogin, setRequestLogin] = useState("");
-  const [requestSubmitting, setRequestSubmitting] = useState(false);
-  const [requestError, setRequestError] = useState<string | null>(null);
 
   const invalidate = () => {
     if (!owner || !repo || !prNumber) return;
@@ -143,37 +139,15 @@ export function ZoneReviews({ reviews, loading, error }: ZoneReviewsProps) {
       {showRequestForm && owner && repo && prNumber && (
         <div className="mt-3 border-t pt-3">
           <p className="mb-2 text-xs font-medium">Request reviewer</p>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="GitHub username"
-              value={requestLogin}
-              onChange={(e) => setRequestLogin(e.target.value)}
-              className="min-w-0 flex-1 rounded-md border bg-background px-2.5 py-1 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-            />
-            <button
-              onClick={async () => {
-                if (!requestLogin.trim()) return;
-                setRequestSubmitting(true);
-                setRequestError(null);
-                const result = await requestReview(owner, repo, prNumber, [requestLogin.trim()]);
-                setRequestSubmitting(false);
-                if (result.success) {
-                  setRequestLogin("");
-                  setShowRequestForm(false);
-                  invalidate();
-                } else {
-                  setRequestError(result.error ?? "Request failed");
-                }
-              }}
-              disabled={requestSubmitting || !requestLogin.trim()}
-              className="flex items-center gap-1 rounded-md bg-foreground px-3 py-1 text-xs text-background transition-opacity hover:opacity-80 disabled:opacity-50"
-            >
-              {requestSubmitting && <Loader2 className="size-3 animate-spin" />}
-              Add
-            </button>
-          </div>
-          {requestError && <p className="mt-1 text-xs text-destructive">{requestError}</p>}
+          <CollaboratorSelector
+            owner={owner}
+            repo={repo}
+            prNumber={prNumber}
+            onSuccess={() => {
+              setShowRequestForm(false);
+              invalidate();
+            }}
+          />
         </div>
       )}
     </div>
