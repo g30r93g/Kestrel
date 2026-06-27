@@ -392,10 +392,10 @@ function SplitDiff({ rows, reviewProps }: { rows: SplitRow[]; reviewProps?: File
     };
 
     elems.push(
-      <div key={`l${i}`} className="flex min-w-0">
+      <div key={`l${i}`} className="flex min-w-max">
         <div
           className={cn(
-            "flex min-w-0 flex-1 overflow-x-auto",
+            "flex min-w-0 flex-1",
             isOldChange && "bg-red-50 dark:bg-red-950/40",
             leftSel && "bg-blue-50 dark:bg-blue-950/40",
           )}
@@ -413,7 +413,7 @@ function SplitDiff({ rows, reviewProps }: { rows: SplitRow[]; reviewProps?: File
         <div className="w-px shrink-0 bg-border" />
         <div
           className={cn(
-            "flex min-w-0 flex-1 overflow-x-auto",
+            "flex min-w-0 flex-1",
             isNewChange && "bg-green-50 dark:bg-green-950/40",
             rightSel && "bg-blue-50 dark:bg-blue-950/40",
           )}
@@ -469,7 +469,7 @@ function SplitDiff({ rows, reviewProps }: { rows: SplitRow[]; reviewProps?: File
     }
   }
 
-  return <div className="min-w-full">{elems}</div>;
+  return <div className="min-w-max">{elems}</div>;
 }
 
 // ─── File Patch Card ──────────────────────────────────────────────────────────
@@ -495,14 +495,13 @@ function FilePatchReviewHeader({
         <MessageSquare className="size-3.5" />
         Add comment
       </button>
-      <label className="flex cursor-pointer select-none items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground">
+      <label className="flex cursor-pointer select-none items-center" title="Mark as reviewed">
         <input
           type="checkbox"
           checked={isReviewed}
           onChange={() => { toggleFile(filename); onToggleOpen(); }}
           className="size-3.5 accent-foreground"
         />
-        Reviewed
       </label>
       {showFileComment && (
         <div className="absolute left-0 right-0 top-full z-10 border-t bg-card px-4 py-3 shadow-md">
@@ -546,13 +545,15 @@ function FilePatch({
         {reviewMode && fileReviewProps && (
           <FilePatchReviewHeader filename={file.filename} onToggleOpen={() => setOpen((v) => !v)} />
         )}
-        <button
-          onClick={() => setOpen((v) => !v)}
-          className="ml-1 shrink-0 text-muted-foreground transition-colors hover:text-foreground"
-          aria-label={open ? "Collapse" : "Expand"}
-        >
-          <ChevronToggle open={open} className="size-4" />
-        </button>
+        {!(reviewMode && fileReviewProps) && (
+          <button
+            onClick={() => setOpen((v) => !v)}
+            className="ml-1 shrink-0 text-muted-foreground transition-colors hover:text-foreground"
+            aria-label={open ? "Collapse" : "Expand"}
+          >
+            <ChevronToggle open={open} className="size-4" />
+          </button>
+        )}
       </div>
       {pendingFileLevelComments.length > 0 && (
         <PendingCommentRow
