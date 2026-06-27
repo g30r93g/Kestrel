@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import {
   ArrowLeft,
   CheckCircle2,
+  ChevronRight,
   CircleDot,
   ExternalLink,
   Loader2,
@@ -18,10 +19,97 @@ import {
   XCircle,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import useSWR from "swr";
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface WorkflowGroup {
+  runId: number;
+  name: string;
+  checks: PRCheckRun[];
+  overallStatus: "success" | "failure" | "in_progress" | "other";
+}
+
+interface CheckGroups {
+  workflows: WorkflowGroup[];
+  standalone: PRCheckRun[];
+}
+
+type Selection =
+  | { kind: "workflow"; runId: number }
+  | { kind: "job"; checkId: number };
+
+// ─── Grouping ─────────────────────────────────────────────────────────────────
+
+function groupChecks(checks: PRCheckRun[]): CheckGroups {
+  const workflowMap = new Map<number, WorkflowGroup>();
+  const standalone: PRCheckRun[] = [];
+
+  for (const check of checks) {
+    if (check.workflowRunId !== null) {
+      if (!workflowMap.has(check.workflowRunId)) {
+        workflowMap.set(check.workflowRunId, {
+          runId: check.workflowRunId,
+          name: check.workflowName ?? `Run #${check.workflowRunId}`,
+          checks: [],
+          overallStatus: "other",
+        });
+      }
+      workflowMap.get(check.workflowRunId)!.checks.push(check);
+    } else {
+      standalone.push(check);
+    }
+  }
+
+  for (const group of workflowMap.values()) {
+    const hasFailure = group.checks.some(
+      (c) =>
+        c.conclusion === "failure" ||
+        c.conclusion === "timed_out" ||
+        c.conclusion === "action_required",
+    );
+    const hasInProgress = group.checks.some((c) => c.status !== "completed");
+    const allSuccess = group.checks.every(
+      (c) =>
+        c.status === "completed" &&
+        (c.conclusion === "success" ||
+          c.conclusion === "neutral" ||
+          c.conclusion === "skipped"),
+    );
+    group.overallStatus = hasFailure
+      ? "failure"
+      : hasInProgress
+        ? "in_progress"
+        : allSuccess
+          ? "success"
+          : "other";
+  }
+
+  return { workflows: [...workflowMap.values()], standalone };
+}
+
 // ─── Icons ────────────────────────────────────────────────────────────────────
+
+function TreeConnector() {
+  return (
+    <svg
+      viewBox="0 0 12 16"
+      width={12}
+      height={16}
+      className="shrink-0 stroke-muted-foreground/30"
+      fill="none"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M6 0 v9 a1 1 0 0 0 1 1 h5" />
+    </svg>
+  );
+}
 
 function CheckStatusIcon({ run }: { run: PRCheckRun }) {
   if (run.status !== "completed")
@@ -38,6 +126,16 @@ function CheckStatusIcon({ run }: { run: PRCheckRun }) {
     run.conclusion === "action_required"
   )
     return <XCircle className="size-4 shrink-0 text-destructive" />;
+  return <CircleDot className="size-4 shrink-0 text-muted-foreground" />;
+}
+
+function WorkflowStatusIcon({ group }: { group: WorkflowGroup }) {
+  if (group.overallStatus === "failure")
+    return <XCircle className="size-4 shrink-0 text-destructive" />;
+  if (group.overallStatus === "in_progress")
+    return <Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" />;
+  if (group.overallStatus === "success")
+    return <CheckCircle2 className="size-4 shrink-0 text-green-500" />;
   return <CircleDot className="size-4 shrink-0 text-muted-foreground" />;
 }
 
@@ -68,63 +166,125 @@ function formatDuration(startedAt: string | null, completedAt: string | null): s
 // ─── Sidebar ─────────────────────────────────────────────────────────────────
 
 function CheckList({
-  checks,
-  selectedId,
+  groups,
+  selection,
   onSelect,
 }: {
-  checks: PRCheckRun[];
-  selectedId: number | null;
-  onSelect: (id: number) => void;
+  groups: CheckGroups;
+  selection: Selection | null;
+  onSelect: (s: Selection) => void;
 }) {
-  const required = checks.filter((c) => c.isRequired);
-  const informational = checks.filter((c) => !c.isRequired);
-
-  const renderCheck = (c: PRCheckRun) => (
-    <button
-      key={c.id}
-      onClick={() => onSelect(c.id)}
-      className={cn(
-        "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted/60",
-        selectedId === c.id && "bg-muted",
-      )}
-    >
-      <CheckStatusIcon run={c} />
-      <span className="flex-1 truncate">{c.name}</span>
-    </button>
-  );
-
   return (
     <div className="px-2 py-2">
-      {required.length > 0 && (
-        <>
-          {required.map(renderCheck)}
-          {informational.length > 0 && (
-            <p className="mt-2 mb-1 px-2 text-xs text-muted-foreground">Informational</p>
-          )}
-        </>
+      {groups.workflows.map((group) => {
+        const isWorkflowSelected =
+          selection?.kind === "workflow" && selection.runId === group.runId;
+        const hasSelectedJob =
+          selection?.kind === "job" &&
+          group.checks.some((c) => c.id === selection.checkId);
+
+        return (
+          <div key={group.runId} className="mb-1">
+            <button
+              onClick={() => onSelect({ kind: "workflow", runId: group.runId })}
+              className={cn(
+                "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm font-medium transition-colors hover:bg-muted/60",
+                isWorkflowSelected && "bg-muted",
+                hasSelectedJob && !isWorkflowSelected && "text-foreground",
+              )}
+            >
+              <WorkflowStatusIcon group={group} />
+              <span className="flex-1 truncate">{group.name}</span>
+            </button>
+            {group.checks.map((check) => {
+              const isSelected =
+                selection?.kind === "job" && selection.checkId === check.id;
+              return (
+                <button
+                  key={check.id}
+                  onClick={() => onSelect({ kind: "job", checkId: check.id })}
+                  className={cn(
+                    "flex w-full items-center gap-2 rounded-md py-1.5 pl-2 pr-2 text-left text-sm transition-colors hover:bg-muted/60",
+                    isSelected && "bg-muted",
+                  )}
+                >
+                  <TreeConnector />
+                  <CheckStatusIcon run={check} />
+                  <span className="flex-1 truncate">{check.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        );
+      })}
+
+      {groups.workflows.length > 0 && groups.standalone.length > 0 && (
+        <div className="my-1 border-t" />
       )}
-      {informational.map(renderCheck)}
+
+      {groups.standalone.map((check) => {
+        const isSelected =
+          selection?.kind === "job" && selection.checkId === check.id;
+        return (
+          <button
+            key={check.id}
+            onClick={() => onSelect({ kind: "job", checkId: check.id })}
+            className={cn(
+              "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted/60",
+              isSelected && "bg-muted",
+            )}
+          >
+            <CheckStatusIcon run={check} />
+            <span className="flex-1 truncate">{check.name}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }
 
-// ─── Execution Graph ──────────────────────────────────────────────────────────
+// ─── Workflow View ────────────────────────────────────────────────────────────
 
-function ExecutionGraph({ detail }: { detail: CheckRunDetail }) {
+function WorkflowView({
+  group,
+  onSelectJob,
+}: {
+  group: WorkflowGroup;
+  onSelectJob: (checkId: number) => void;
+}) {
+  return (
+    <div className="divide-y rounded-lg border">
+      {group.checks.map((check) => (
+        <button
+          key={check.id}
+          onClick={() => onSelectJob(check.id)}
+          className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/40"
+        >
+          <CheckStatusIcon run={check} />
+          <span className="flex-1 text-sm">{check.name}</span>
+          <ChevronRight className="size-4 shrink-0 text-muted-foreground/50" />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ─── Job View ─────────────────────────────────────────────────────────────────
+
+function JobView({ detail }: { detail: CheckRunDetail }) {
   const duration = formatDuration(detail.startedAt, detail.completedAt);
 
   if (detail.steps.length > 0) {
     return (
       <div className="flex flex-col">
         {duration && (
-          <p className="mb-4 text-xs text-muted-foreground">
-            Total: {duration}
-          </p>
+          <p className="mb-4 text-xs text-muted-foreground">Total: {duration}</p>
         )}
-        <ol className="relative border-l border-border ml-2">
+        <ol className="relative ml-2 border-l border-border">
           {detail.steps.map((step) => {
             const stepDuration = formatDuration(step.startedAt, step.completedAt);
-            const isSkipped = step.conclusion === "skipped" || step.conclusion === "cancelled";
+            const isSkipped =
+              step.conclusion === "skipped" || step.conclusion === "cancelled";
             return (
               <li key={step.number} className="mb-4 ml-4 last:mb-0">
                 <div className="absolute -left-2 flex items-center justify-center">
@@ -167,10 +327,14 @@ function ExecutionGraph({ detail }: { detail: CheckRunDetail }) {
     <div className="space-y-3">
       {title && <h3 className="font-medium">{title}</h3>}
       {summary && (
-        <p className="whitespace-pre-wrap text-sm text-muted-foreground">{summary}</p>
+        <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{summary}</ReactMarkdown>
+        </div>
       )}
       {text && (
-        <pre className="overflow-x-auto rounded-md border bg-muted p-3 text-xs">{text}</pre>
+        <div className="prose prose-sm dark:prose-invert max-w-none">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
+        </div>
       )}
     </div>
   );
@@ -185,7 +349,7 @@ interface ChecksViewProps {
 }
 
 export function ChecksView({ owner, repo, prNumber }: ChecksViewProps) {
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selection, setSelection] = useState<Selection | null>(null);
 
   const { data: pr } = useSWR(
     [owner, repo, prNumber, "pr"],
@@ -197,18 +361,49 @@ export function ChecksView({ owner, repo, prNumber }: ChecksViewProps) {
     ([o, r, sha, base]) => fetchPullRequestChecks(o, r, sha, base),
   );
 
-  const effectiveId = selectedId ?? checks[0]?.id ?? null;
+  const groups = useMemo(() => groupChecks(checks), [checks]);
+
+  const defaultSelection = useMemo((): Selection | null => {
+    if (groups.workflows.length > 0) {
+      const failing = groups.workflows.find((g) => g.overallStatus === "failure");
+      return { kind: "workflow", runId: (failing ?? groups.workflows[0]).runId };
+    }
+    if (groups.standalone.length > 0) {
+      return { kind: "job", checkId: groups.standalone[0].id };
+    }
+    return null;
+  }, [groups]);
+
+  const effectiveSelection = selection ?? defaultSelection;
+
+  const selectedCheckId =
+    effectiveSelection?.kind === "job" ? effectiveSelection.checkId : null;
 
   const { data: detail, isLoading: detailLoading } = useSWR(
-    effectiveId !== null ? [owner, repo, effectiveId, "check-detail"] : null,
+    selectedCheckId !== null ? [owner, repo, selectedCheckId, "check-detail"] : null,
     ([o, r, id]) => fetchCheckRunDetails(o, r, id),
   );
 
-  const selectedCheck = checks.find((c) => c.id === effectiveId) ?? null;
+  const selectedCheck =
+    selectedCheckId !== null
+      ? (checks.find((c) => c.id === selectedCheckId) ?? null)
+      : null;
+
+  const selectedWorkflow =
+    effectiveSelection?.kind === "workflow"
+      ? (groups.workflows.find((g) => g.runId === effectiveSelection.runId) ?? null)
+      : selectedCheck?.workflowRunId !== null && selectedCheck?.workflowRunId !== undefined
+        ? (groups.workflows.find((g) => g.runId === selectedCheck.workflowRunId) ?? null)
+        : null;
+
+  const externalUrl =
+    effectiveSelection?.kind === "workflow" && selectedWorkflow
+      ? `https://github.com/${owner}/${repo}/actions/runs/${selectedWorkflow.runId}`
+      : (selectedCheck?.detailsUrl || null);
 
   return (
     <div className="flex min-w-0 flex-1 overflow-hidden">
-      {/* Check list sidebar */}
+      {/* Sidebar */}
       <aside className="hidden w-56 shrink-0 overflow-y-auto border-r md:block">
         {checksLoading ? (
           <div className="space-y-1.5 p-3">
@@ -216,9 +411,9 @@ export function ChecksView({ owner, repo, prNumber }: ChecksViewProps) {
           </div>
         ) : (
           <CheckList
-            checks={checks}
-            selectedId={effectiveId}
-            onSelect={setSelectedId}
+            groups={groups}
+            selection={effectiveSelection}
+            onSelect={setSelection}
           />
         )}
       </aside>
@@ -226,51 +421,89 @@ export function ChecksView({ owner, repo, prNumber }: ChecksViewProps) {
       {/* Main content */}
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         {/* Toolbar */}
-        <div className="flex items-center gap-3 border-b px-4 py-2">
+        <div className="flex items-center gap-2 border-b px-4 py-2">
           <Link
             href={`/${owner}/${repo}/pulls/${prNumber}`}
-            className="flex items-center gap-1 text-xs text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline"
+            className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline"
           >
             <ArrowLeft className="size-3.5" />
             Back to PR #{prNumber}
           </Link>
+
+          {selectedWorkflow && (
+            <>
+              <span className="text-xs text-muted-foreground/40">/</span>
+              {effectiveSelection?.kind === "job" ? (
+                <button
+                  onClick={() =>
+                    setSelection({ kind: "workflow", runId: selectedWorkflow.runId })
+                  }
+                  className="shrink-0 text-xs text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline"
+                >
+                  {selectedWorkflow.name}
+                </button>
+              ) : (
+                <span className="truncate text-xs font-medium">
+                  {selectedWorkflow.name}
+                </span>
+              )}
+            </>
+          )}
+
           {selectedCheck && (
             <>
               <span className="text-xs text-muted-foreground/40">/</span>
               <span className="truncate text-xs font-medium">{selectedCheck.name}</span>
-              {selectedCheck.detailsUrl && (
-                <a
-                  href={selectedCheck.detailsUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="ml-auto flex shrink-0 items-center gap-1 text-xs text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline"
-                >
-                  View logs <ExternalLink className="size-3" />
-                </a>
-              )}
             </>
+          )}
+
+          {externalUrl && (
+            <a
+              href={externalUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="ml-auto flex shrink-0 items-center gap-1 text-xs text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline"
+            >
+              View logs <ExternalLink className="size-3" />
+            </a>
           )}
         </div>
 
-        {/* Execution graph */}
+        {/* Content */}
         <div className="flex flex-1 flex-col overflow-y-auto p-6 [scrollbar-gutter:stable]">
-          {detailLoading && (
-            <div className="space-y-3">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <Skeleton className="size-4 shrink-0 rounded-full" />
-                  <Skeleton className="h-4 w-48" />
-                  <Skeleton className="h-4 w-8" />
+          {effectiveSelection?.kind === "workflow" && selectedWorkflow && (
+            <WorkflowView
+              group={selectedWorkflow}
+              onSelectJob={(checkId) => setSelection({ kind: "job", checkId })}
+            />
+          )}
+
+          {effectiveSelection?.kind === "job" && (
+            <>
+              {detailLoading && (
+                <div className="space-y-3">
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <Skeleton className="size-4 shrink-0 rounded-full" />
+                      <Skeleton className="h-4 w-48" />
+                      <Skeleton className="h-4 w-8" />
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              )}
+              {!detailLoading && detail && <JobView detail={detail} />}
+              {!detailLoading && !detail && (
+                <p className="text-sm text-muted-foreground">
+                  Failed to load check details.
+                </p>
+              )}
+            </>
           )}
-          {!detailLoading && detail && <ExecutionGraph detail={detail} />}
-          {!detailLoading && !detail && effectiveId && (
-            <p className="text-sm text-muted-foreground">Failed to load check details.</p>
-          )}
-          {!detailLoading && !effectiveId && (
-            <p className="text-sm text-muted-foreground">Select a check to view its execution graph.</p>
+
+          {!effectiveSelection && !checksLoading && (
+            <p className="text-sm text-muted-foreground">
+              Select a check to view its execution graph.
+            </p>
           )}
         </div>
       </div>

@@ -209,14 +209,45 @@ export async function fetchPullRequestChecks(
     );
     const requiredNames = new Set<string>([...contextNames, ...checkNames]);
 
-    return checksData.check_runs.map((c) => ({
-      id: c.id,
-      name: c.name,
-      status: c.status as PRCheckStatus,
-      conclusion: (c.conclusion ?? null) as PRCheckConclusion,
-      detailsUrl: c.details_url ?? "",
-      isRequired: requiredNames.has(c.name),
-    }));
+    const extractRunId = (url: string) => {
+      const m = url.match(/\/actions\/runs\/(\d+)\/job\//);
+      return m ? parseInt(m[1], 10) : null;
+    };
+
+    const runIds = new Set<number>();
+    for (const c of checksData.check_runs) {
+      const runId = extractRunId(c.details_url ?? "");
+      if (runId) runIds.add(runId);
+    }
+
+    const workflowNames = new Map<number, string>();
+    await Promise.all(
+      [...runIds].map(async (runId) => {
+        try {
+          const { data } = await octokit.request(
+            "GET /repos/{owner}/{repo}/actions/runs/{run_id}",
+            { owner, repo, run_id: runId },
+          );
+          workflowNames.set(runId, (data as { name: string }).name);
+        } catch {
+          // ignore — workflow name will be omitted
+        }
+      }),
+    );
+
+    return checksData.check_runs.map((c) => {
+      const workflowRunId = extractRunId(c.details_url ?? "");
+      return {
+        id: c.id,
+        name: c.name,
+        status: c.status as PRCheckStatus,
+        conclusion: (c.conclusion ?? null) as PRCheckConclusion,
+        detailsUrl: c.details_url ?? "",
+        isRequired: requiredNames.has(c.name),
+        workflowRunId,
+        workflowName: workflowRunId ? (workflowNames.get(workflowRunId) ?? null) : null,
+      };
+    });
   } catch {
     return [];
   }

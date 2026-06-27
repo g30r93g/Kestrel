@@ -1,6 +1,5 @@
 "use client";
 
-import { computeVerdict, parseSignals } from "@/lib/github/pulls-compute";
 import {
   fetchPullRequest,
   fetchPullRequestActivity,
@@ -10,17 +9,18 @@ import {
   fetchPullRequestReviews,
   fetchPullRequestThreads,
 } from "@/lib/github/pulls";
+import { computeVerdict, parseSignals } from "@/lib/github/pulls-compute";
 import { GitPullRequest } from "lucide-react";
 import useSWR from "swr";
-import { ZoneIdentity } from "./zone-identity";
-import { ZoneVerdict } from "./zone-verdict";
-import { ZoneReviews } from "./zone-reviews";
+import { ZoneActivity } from "./zone-activity";
 import { ZoneChecks } from "./zone-checks";
 import { ZoneCodeDelta } from "./zone-code-delta";
-import { ZoneSignals } from "./zone-signals";
 import { ZoneConversation } from "./zone-conversation";
+import { ZoneIdentity } from "./zone-identity";
+import { ZoneReviews } from "./zone-reviews";
+import { ZoneSignals } from "./zone-signals";
 import { ZoneUnresolved } from "./zone-unresolved";
-import { ZoneActivity } from "./zone-activity";
+import { ZoneVerdict } from "./zone-verdict";
 
 interface PullsViewProps {
   owner: string;
@@ -114,22 +114,24 @@ export function PullsView({ owner, repo, prNumber }: PullsViewProps) {
           error={!!filesErr}
         />
       </div>
-      <ZoneSignals
-        chips={signals}
-        loading={commentsLoading}
-        error={!!commentsErr}
-      />
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-[5fr_3fr]">
         <ZoneConversation
           comments={humanComments}
           loading={commentsLoading}
           error={!!commentsErr}
         />
-        <ZoneUnresolved
-          threads={unresolvedThreads}
-          loading={threadsLoading}
-          error={!!threadsErr}
-        />
+        <div className="flex flex-col gap-4">
+          <ZoneSignals
+            chips={signals}
+            loading={commentsLoading}
+            error={!!commentsErr}
+          />
+          <ZoneUnresolved
+            threads={unresolvedThreads}
+            loading={threadsLoading}
+            error={!!threadsErr}
+          />
+        </div>
       </div>
       <ZoneActivity
         events={activity}

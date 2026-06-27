@@ -61,7 +61,18 @@ export function ZoneCodeDelta({ pr, files, loading, error }: ZoneCodeDeltaProps)
 
   return (
     <div className="rounded-lg border bg-card p-4">
-      <h2 className="mb-3 text-sm font-medium">Code Delta</h2>
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="text-sm font-medium">Code Delta</h2>
+        {!loading && !error && pr && (
+          <Link
+            href={diffHref}
+            className="flex items-center gap-1 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline transition-colors"
+          >
+            <FileCode className="size-3.5" />
+            Open diff
+          </Link>
+        )}
+      </div>
 
       {error && (
         <p className="text-xs text-destructive">Diff stats unavailable.</p>
@@ -97,14 +108,8 @@ export function ZoneCodeDelta({ pr, files, loading, error }: ZoneCodeDeltaProps)
             </div>
           )}
 
-          <Link
-            href={diffHref}
-            className="mt-3 flex items-center gap-1 text-xs text-muted-foreground underline hover:text-foreground"
-          >
-            <FileCode className="size-3.5" />
-            Open diff
-          </Link>
         </>
+
       )}
 
       {!loading && !error && !pr && (
