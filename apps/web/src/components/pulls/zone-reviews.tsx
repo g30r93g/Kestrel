@@ -3,6 +3,7 @@
 import type { PRReview } from "@/lib/github/types";
 import { CollaboratorSelector } from "@/components/pulls/collaborator-selector";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { formatTimeAgo } from "@/lib/time";
 import {
   CheckCircle2,
@@ -48,7 +49,7 @@ export function ZoneReviews({ reviews, loading, error }: ZoneReviewsProps) {
   const repo = params.rest?.[0];
   const prNumber = params.rest?.[2] ? parseInt(params.rest[2], 10) : undefined;
 
-  const [showRequestForm, setShowRequestForm] = useState(false);
+  const [requestOpen, setRequestOpen] = useState(false);
 
   const invalidate = () => {
     if (!owner || !repo || !prNumber) return;
@@ -75,13 +76,27 @@ export function ZoneReviews({ reviews, loading, error }: ZoneReviewsProps) {
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-medium">Reviews</h2>
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => setShowRequestForm((v) => !v)}
-            className="flex items-center gap-1 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline transition-colors"
-          >
-            <UserPlus className="size-3.5" />
-            Request reviewer
-          </button>
+          <Popover open={requestOpen} onOpenChange={setRequestOpen}>
+            <PopoverTrigger
+              className="flex items-center gap-1 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline transition-colors"
+            >
+              <UserPlus className="size-3.5" />
+              Request reviewer
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-80 p-3">
+              {owner && repo && prNumber && (
+                <CollaboratorSelector
+                  owner={owner}
+                  repo={repo}
+                  prNumber={prNumber}
+                  onSuccess={() => {
+                    setRequestOpen(false);
+                    invalidate();
+                  }}
+                />
+              )}
+            </PopoverContent>
+          </Popover>
           {owner && repo && prNumber && (
             <Link
               href={`/${owner}/${repo}/pulls/${prNumber}/diff?review=true`}
@@ -136,20 +151,6 @@ export function ZoneReviews({ reviews, loading, error }: ZoneReviewsProps) {
         </div>
       )}
 
-      {showRequestForm && owner && repo && prNumber && (
-        <div className="mt-3 border-t pt-3">
-          <p className="mb-2 text-xs font-medium">Request reviewer</p>
-          <CollaboratorSelector
-            owner={owner}
-            repo={repo}
-            prNumber={prNumber}
-            onSuccess={() => {
-              setShowRequestForm(false);
-              invalidate();
-            }}
-          />
-        </div>
-      )}
     </div>
   );
 }
