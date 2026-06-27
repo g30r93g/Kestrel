@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import useSWRImmutable from "swr/immutable";
 import { FileBrowser } from "./file-browser";
 import { FileHeader } from "./file-header";
+import { FileSwitcher } from "./file-switcher";
 import { FileInspector, type FileInspectorProps } from "./file-inspector";
 
 interface CodeViewProps {
@@ -45,7 +46,7 @@ export function CodeView({ owner, repo, selectedPath }: CodeViewProps) {
 
   return (
     <div className="flex flex-1 min-h-0 overflow-hidden">
-      <aside className="flex w-60 shrink-0 flex-col border-r overflow-hidden">
+      <aside className="hidden md:flex w-60 shrink-0 flex-col border-r overflow-hidden">
         <FileBrowser
           owner={owner}
           repo={repo}
@@ -55,6 +56,13 @@ export function CodeView({ owner, repo, selectedPath }: CodeViewProps) {
         />
       </aside>
       <div className="flex flex-1 flex-col min-h-0 overflow-hidden">
+        <FileSwitcher
+          owner={owner}
+          repo={repo}
+          gitRef={gitRef}
+          selectedPath={selectedPath}
+          basePath={basePath}
+        />
         {selectedPath && (
           <FileHeader
             path={selectedPath}
