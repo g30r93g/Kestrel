@@ -190,3 +190,172 @@ export type IssueTimelineEvent =
   | { kind: "unassigned"; actor: IssueUser; createdAt: string; assignee: IssueUser }
   | { kind: "milestoned"; actor: IssueUser; createdAt: string; milestone: string }
   | { kind: "demilestoned"; actor: IssueUser; createdAt: string; milestone: string };
+
+// --- Pull Requests ---
+
+export type PRLifecycleState = "open" | "draft" | "merged" | "closed";
+
+export type PRReviewState =
+  | "APPROVED"
+  | "CHANGES_REQUESTED"
+  | "COMMENTED"
+  | "DISMISSED"
+  | "PENDING";
+
+export type PRMergeableState = "mergeable" | "conflicting" | "unknown";
+
+export type PRCheckStatus =
+  | "queued"
+  | "in_progress"
+  | "completed"
+  | "waiting"
+  | "pending"
+  | "requested";
+
+export type PRCheckConclusion =
+  | "success"
+  | "failure"
+  | "neutral"
+  | "cancelled"
+  | "skipped"
+  | "timed_out"
+  | "action_required"
+  | null;
+
+export interface PRUser {
+  login: string;
+  avatarUrl: string;
+}
+
+export interface PRLabel {
+  name: string;
+  color: string;
+}
+
+export interface PullRequestSummary {
+  number: number;
+  title: string;
+  state: PRLifecycleState;
+  headRef: string;
+  baseRef: string;
+  author: PRUser;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PullRequest extends PullRequestSummary {
+  body: string;
+  headSha: string;
+  commitCount: number;
+  additions: number;
+  deletions: number;
+  changedFiles: number;
+  labels: PRLabel[];
+  assignees: PRUser[];
+  mergedAt: string | null;
+  mergedBy: PRUser | null;
+  autoMergeEnabled: boolean;
+  mergeableState: PRMergeableState;
+  behindBy: number;
+  htmlUrl: string;
+}
+
+export interface PRReview {
+  id: number;
+  reviewer: PRUser;
+  state: PRReviewState;
+  submittedAt: string | null;
+  body: string;
+  isAutomated: boolean;
+}
+
+export interface PRCheckRun {
+  id: number;
+  name: string;
+  status: PRCheckStatus;
+  conclusion: PRCheckConclusion;
+  detailsUrl: string;
+  isRequired: boolean;
+}
+
+export interface PRComment {
+  id: number;
+  author: PRUser;
+  body: string;
+  createdAt: string;
+}
+
+export interface PRThread {
+  id: string;
+  path: string;
+  line: number | null;
+  isResolved: boolean;
+  firstComment: PRComment;
+}
+
+export interface PRFile {
+  filename: string;
+  additions: number;
+  deletions: number;
+  status:
+    | "added"
+    | "removed"
+    | "modified"
+    | "renamed"
+    | "copied"
+    | "changed"
+    | "unchanged";
+}
+
+export type VerdictStatus = "READY" | "NOT_READY" | "MERGED" | "DRAFT" | "CLOSED";
+
+export interface VerdictBlocker {
+  kind: "check" | "review" | "conflict" | "threads" | "policy";
+  label: string;
+}
+
+export interface VerdictState {
+  status: VerdictStatus;
+  blockers: VerdictBlocker[];
+  notables: string[];
+}
+
+export type SignalKind =
+  | "coverage"
+  | "bundle"
+  | "performance"
+  | "security"
+  | "deploy"
+  | "quality"
+  | "visual"
+  | "dependency"
+  | "automated-note";
+
+export interface SignalChip {
+  kind: SignalKind;
+  label: string;
+  value: string;
+  delta?: string;
+  deltaDirection?: "up" | "down" | "neutral";
+  severity: "ok" | "warning" | "error";
+  url?: string;
+}
+
+export interface PRActivity {
+  id: string;
+  type:
+    | "committed"
+    | "reviewed"
+    | "commented"
+    | "merged"
+    | "closed"
+    | "reopened"
+    | "labeled"
+    | "assigned"
+    | "review_requested"
+    | "base_changed"
+    | "other";
+  actor: PRUser | null;
+  detail: string;
+  createdAt: string;
+}
