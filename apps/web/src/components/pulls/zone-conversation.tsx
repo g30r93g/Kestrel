@@ -69,7 +69,10 @@ export function ZoneConversation({ comments, loading, error }: ZoneConversationP
         invalidate();
       });
       // After undo window expires, refresh to get server-canonical state
-      setTimeout(invalidate, 6200);
+      setTimeout(() => {
+        setOptimisticComment(null);
+        invalidate();
+      }, 6200);
     } else {
       // Failed — roll back optimistic comment
       setOptimisticComment(null);
