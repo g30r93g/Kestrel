@@ -120,7 +120,7 @@ function FileContent({
 
   return (
     <TooltipProvider delay={300}>
-      <div className="flex-1 overflow-auto pb-8">
+      <div className="flex-1 overflow-auto pb-8 [scrollbar-gutter:stable]">
         <table className="min-w-full border-collapse">
           <tbody>
             {lines.map((line, i) => {
@@ -253,7 +253,7 @@ function MarkdownViewer({
         </TabsList>
       </div>
       <TabsContent value="preview" className="flex flex-col flex-1 min-h-0">
-        <div className="flex-1 overflow-auto px-12 py-8">
+        <div className="flex-1 overflow-auto px-12 py-8 [scrollbar-gutter:stable]">
           <div className="prose prose-sm dark:prose-invert max-w-3xl">
             <Markdown remarkPlugins={[remarkGfm]}>{content}</Markdown>
           </div>
@@ -274,7 +274,7 @@ function CsvViewer({ content }: { content: string }) {
   const [header, ...body] = rows;
 
   return (
-    <div className="flex-1 overflow-auto pb-8">
+    <div className="flex-1 overflow-auto pb-8 [scrollbar-gutter:stable]">
       <table className="min-w-full border-collapse text-sm">
         <thead>
           <tr className="border-b bg-muted/40">
@@ -432,7 +432,7 @@ export function FileInspector(props: FileInspectorProps) {
 
   // Diff mode
   return (
-    <div className="flex-1 overflow-auto pb-8">
+    <div className="flex-1 overflow-auto pb-8 [scrollbar-gutter:stable]">
       <table className="min-w-full border-collapse">
         <tbody>
           {props.hunks.map((hunk, hi) => (
