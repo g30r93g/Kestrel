@@ -2,6 +2,7 @@ import { resolveNav } from "@/lib/nav-tree";
 import { getOctokit } from "@/lib/github/client";
 import { BranchesView } from "@/components/branches/branches-view";
 import { CodeView } from "@/components/code/code-view";
+import { TagsAndReleasesView } from "@/components/tags-and-releases/tags-and-releases-view";
 import type { BranchFilter } from "@/lib/github/types";
 
 export default async function DashboardPage({
@@ -17,6 +18,16 @@ export default async function DashboardPage({
     const repo = segments[0];
     const selectedPath = segments.length > 2 ? segments.slice(2).join("/") : undefined;
     return <CodeView owner={owner} repo={repo} selectedPath={selectedPath} />;
+  }
+
+  // Tags & Releases: /{owner}/{repo}/releases
+  if (segments.length >= 2 && segments[1] === "releases") {
+    const repo = segments[0];
+    return (
+      <div className="flex-1 overflow-auto p-4 md:p-6 [scrollbar-gutter:stable]">
+        <TagsAndReleasesView owner={owner} repo={repo} />
+      </div>
+    );
   }
 
   // Branches: /{owner}/{repo}/branches[/{filter}]
