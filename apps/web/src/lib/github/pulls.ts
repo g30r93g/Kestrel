@@ -8,6 +8,7 @@ import type {
   PRCheckConclusion,
   PRCheckRun,
   PRCheckStatus,
+  CheckRunDetail,
   PRComment,
   PRFile,
   PRLifecycleState,
@@ -442,5 +443,77 @@ export async function fetchPullRequestActivity(
     }));
   } catch {
     return [];
+  }
+}
+
+function extractActionsJobId(detailsUrl: string): number | null {
+  const m = detailsUrl.match(/\/job\/(\d+)$/);
+  return m ? parseInt(m[1], 10) : null;
+}
+
+export async function fetchCheckRunDetails(
+  owner: string,
+  repo: string,
+  checkRunId: number,
+): Promise<CheckRunDetail | null> {
+  const octokit = await getOctokit();
+  try {
+    const { data: cr } = await octokit.rest.checks.get({
+      owner,
+      repo,
+      check_run_id: checkRunId,
+    });
+
+    const jobId = extractActionsJobId(cr.details_url ?? "");
+    let steps: CheckRunDetail["steps"] = [];
+
+    if (jobId) {
+      try {
+        const { data: job } = await octokit.request(
+          "GET /repos/{owner}/{repo}/actions/jobs/{job_id}",
+          { owner, repo, job_id: jobId },
+        );
+        steps = ((job as { steps?: unknown[] }).steps ?? []).map(
+          (s: unknown) => {
+            const step = s as {
+              number: number;
+              name: string;
+              status: string;
+              conclusion: string | null;
+              started_at?: string | null;
+              completed_at?: string | null;
+            };
+            return {
+              number: step.number,
+              name: step.name,
+              status: step.status,
+              conclusion: step.conclusion ?? null,
+              startedAt: step.started_at ?? null,
+              completedAt: step.completed_at ?? null,
+            };
+          },
+        );
+      } catch {
+        // Non-Actions check — steps unavailable, continue with output only
+      }
+    }
+
+    return {
+      id: cr.id,
+      name: cr.name,
+      status: cr.status as PRCheckStatus,
+      conclusion: (cr.conclusion ?? null) as PRCheckConclusion,
+      detailsUrl: cr.details_url ?? "",
+      startedAt: cr.started_at ?? null,
+      completedAt: cr.completed_at ?? null,
+      output: {
+        title: cr.output.title ?? null,
+        summary: cr.output.summary ?? null,
+        text: cr.output.text ?? null,
+      },
+      steps,
+    };
+  } catch {
+    return null;
   }
 }

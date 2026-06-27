@@ -278,6 +278,31 @@ export interface PRCheckRun {
   isRequired: boolean;
 }
 
+export interface CheckStep {
+  number: number;
+  name: string;
+  status: string;
+  conclusion: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+}
+
+export interface CheckRunDetail {
+  id: number;
+  name: string;
+  status: PRCheckStatus;
+  conclusion: PRCheckConclusion;
+  detailsUrl: string;
+  startedAt: string | null;
+  completedAt: string | null;
+  output: {
+    title: string | null;
+    summary: string | null;
+    text: string | null;
+  };
+  steps: CheckStep[];
+}
+
 export interface PRComment {
   id: number;
   author: PRUser;

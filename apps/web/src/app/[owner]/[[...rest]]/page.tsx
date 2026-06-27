@@ -7,6 +7,7 @@ import { PackagesView } from "@/components/packages/packages-view";
 import { TagsAndReleasesView } from "@/components/tags-and-releases/tags-and-releases-view";
 import { PullsView } from "@/components/pulls/pulls-view";
 import { DiffView } from "@/components/pulls/diff-view";
+import { ChecksView } from "@/components/pulls/checks-view";
 import type { BranchFilter } from "@/lib/github/types";
 
 export default async function DashboardPage({
@@ -71,6 +72,10 @@ export default async function DashboardPage({
 
     if (subView === "diff" && prNumber !== undefined) {
       return <DiffView owner={owner} repo={repo} prNumber={prNumber} />;
+    }
+
+    if (subView === "checks" && prNumber !== undefined) {
+      return <ChecksView owner={owner} repo={repo} prNumber={prNumber} />;
     }
 
     return <PullsView owner={owner} repo={repo} prNumber={prNumber} />;

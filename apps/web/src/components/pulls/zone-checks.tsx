@@ -6,9 +6,12 @@ import {
   CheckCircle2,
   CircleDot,
   ExternalLink,
+  ListChecks,
   Loader2,
   XCircle,
 } from "lucide-react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
 
 function CheckIcon({ run }: { run: PRCheckRun }) {
   if (run.status !== "completed")
@@ -54,12 +57,32 @@ function CheckRow({ c }: { c: PRCheckRun }) {
 }
 
 export function ZoneChecks({ checks, loading, error }: ZoneChecksProps) {
+  const params = useParams<{ owner: string; rest?: string[] }>();
+  const owner = params.owner;
+  const repo = params.rest?.[0];
+  const prNumber = params.rest?.[2];
+  const checksHref =
+    owner && repo && prNumber
+      ? `/${owner}/${repo}/pulls/${prNumber}/checks`
+      : "#";
+
   const requiredChecks = checks.filter((c) => c.isRequired);
   const informationalChecks = checks.filter((c) => !c.isRequired);
 
   return (
     <div className="rounded-lg border bg-card p-4">
-      <h2 className="mb-3 text-sm font-medium">Checks</h2>
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="text-sm font-medium">Checks</h2>
+        {!loading && !error && checks.length > 0 && (
+          <Link
+            href={checksHref}
+            className="flex items-center gap-1 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline transition-colors"
+          >
+            <ListChecks className="size-3.5" />
+            Open checks
+          </Link>
+        )}
+      </div>
 
       {error && (
         <p className="text-xs text-destructive">
