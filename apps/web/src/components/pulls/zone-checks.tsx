@@ -34,9 +34,28 @@ export interface ZoneChecksProps {
   error: boolean;
 }
 
+function CheckRow({ c }: { c: PRCheckRun }) {
+  return (
+    <li className="flex items-center gap-2 text-sm">
+      <CheckIcon run={c} />
+      <span className="flex-1 truncate">{c.name}</span>
+      {(c.conclusion === "failure" || c.conclusion === "timed_out" || c.conclusion === "action_required") && c.detailsUrl && (
+        <a
+          href={c.detailsUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground underline hover:text-foreground"
+        >
+          Logs <ExternalLink className="size-3" />
+        </a>
+      )}
+    </li>
+  );
+}
+
 export function ZoneChecks({ checks, loading, error }: ZoneChecksProps) {
   const requiredChecks = checks.filter((c) => c.isRequired);
-  const allChecksCount = checks.length;
+  const informationalChecks = checks.filter((c) => !c.isRequired);
 
   return (
     <div className="rounded-lg border bg-card p-4">
@@ -59,39 +78,29 @@ export function ZoneChecks({ checks, loading, error }: ZoneChecksProps) {
         </div>
       )}
 
-      {!loading && !error && requiredChecks.length === 0 && allChecksCount === 0 && (
+      {!loading && !error && checks.length === 0 && (
         <p className="text-xs text-muted-foreground">No checks configured.</p>
       )}
 
-      {!loading && !error && requiredChecks.length === 0 && allChecksCount > 0 && (
-        <p className="text-xs text-muted-foreground">
-          No required checks — {allChecksCount} informational.
-        </p>
-      )}
-
-      <ul className="space-y-2">
-        {requiredChecks.map((c) => (
-          <li key={c.id} className="flex items-center gap-2 text-sm">
-            <CheckIcon run={c} />
-            <span className="flex-1 truncate">{c.name}</span>
-            {(c.conclusion === "failure" || c.conclusion === "timed_out" || c.conclusion === "action_required") && c.detailsUrl && (
-              <a
-                href={c.detailsUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground underline hover:text-foreground"
-              >
-                Logs <ExternalLink className="size-3" />
-              </a>
-            )}
-          </li>
-        ))}
-      </ul>
-
-      {allChecksCount > requiredChecks.length && (
-        <p className="mt-3 text-xs text-muted-foreground">
-          +{allChecksCount - requiredChecks.length} informational checks
-        </p>
+      {!loading && !error && checks.length > 0 && (
+        <ul className="space-y-2">
+          {requiredChecks.map((c) => (
+            <CheckRow key={c.id} c={c} />
+          ))}
+          {requiredChecks.length > 0 && informationalChecks.length > 0 && (
+            <li className="border-t pt-2">
+              <p className="mb-2 text-xs text-muted-foreground">Informational</p>
+              <ul className="space-y-2">
+                {informationalChecks.map((c) => (
+                  <CheckRow key={c.id} c={c} />
+                ))}
+              </ul>
+            </li>
+          )}
+          {requiredChecks.length === 0 && informationalChecks.map((c) => (
+            <CheckRow key={c.id} c={c} />
+          ))}
+        </ul>
       )}
     </div>
   );
