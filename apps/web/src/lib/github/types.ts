@@ -276,6 +276,8 @@ export interface PRCheckRun {
   conclusion: PRCheckConclusion;
   detailsUrl: string;
   isRequired: boolean;
+  workflowRunId: number | null;
+  workflowName: string | null;
 }
 
 export interface CheckStep {
@@ -383,4 +385,28 @@ export interface PRActivity {
   actor: PRUser | null;
   detail: string;
   createdAt: string;
+}
+
+export interface PRCollaborator {
+  login: string;
+  avatarUrl: string;
+}
+
+export interface PendingReviewComment {
+  id: string;
+  path: string;
+  body: string;
+  line: number;
+  startLine?: number;
+  side: "LEFT" | "RIGHT";
+  startSide?: "LEFT" | "RIGHT";
+  isFileLevel?: boolean;
+  quotedText?: string;
+}
+
+export interface ReviewDraft {
+  commitSha: string;
+  comments: PendingReviewComment[];
+  markedFiles: string[];
+  body: string;
 }
