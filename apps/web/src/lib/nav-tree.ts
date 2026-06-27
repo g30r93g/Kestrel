@@ -111,7 +111,7 @@ export const repoGroups: NavGroup[] = [
   {
     id: "work",
     nodes: [
-      drill("reviews", "Reviews", Eye, [
+      drill("reviews", "Review Queue", Eye, [
         leaf("requested", "Requested", Eye, ""),
         leaf("done", "Done", Eye),
       ], 2),
