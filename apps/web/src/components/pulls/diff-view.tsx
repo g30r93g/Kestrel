@@ -3,9 +3,9 @@
 import { fetchPullRequestPatches, type PatchFile } from "@/lib/github/pulls";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronToggle } from "@/components/ui/chevron-toggle";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { ArrowLeft, ChevronRight, File, Folder, FolderOpen } from "lucide-react";
-import { motion } from "motion/react";
 import Link from "next/link";
 import { useCallback, useState } from "react";
 import useSWR from "swr";
@@ -153,7 +153,7 @@ function TreeNode({ node, depth, expanded, onToggle }: {
     node.file?.status === "added" ? "text-green-600" :
     node.file?.status === "removed" ? "text-red-500" :
     node.file?.status === "renamed" || node.file?.status === "copied" ? "text-blue-500" :
-    node.file?.status === "modified" || node.file?.status === "changed" ? "text-orange-500" :
+    node.file?.status === "modified" || node.file?.status === "changed" ? "text-amber-500" :
     "text-muted-foreground";
 
   return (
@@ -199,14 +199,14 @@ const NUM = "w-10 shrink-0 select-none border-r px-1.5 text-right font-mono text
 
 function UnifiedDiff({ lines }: { lines: ParsedLine[] }) {
   return (
-    <div>
+    <div className="w-max min-w-full">
       {lines.map((line, i) => {
         if (line.type === "hunkHeader") {
           return (
             <div key={i} className="flex bg-muted">
               <span className={NUM} />
               <span className={NUM} />
-              <span className="flex-1 whitespace-pre-wrap px-3 py-0.5 font-mono text-xs text-muted-foreground">{line.content}</span>
+              <span className="flex-1 whitespace-pre px-3 py-0.5 font-mono text-xs text-muted-foreground">{line.content}</span>
             </div>
           );
         }
@@ -215,7 +215,7 @@ function UnifiedDiff({ lines }: { lines: ParsedLine[] }) {
             <div key={i} className="flex bg-green-50 dark:bg-green-950/40">
               <span className={NUM} />
               <span className={cn(NUM, "bg-green-100/60 dark:bg-green-900/40")}>{line.newLine}</span>
-              <span className="flex-1 whitespace-pre-wrap px-3 py-0 font-mono text-xs text-green-800 dark:text-green-300">+{line.content}</span>
+              <span className="flex-1 whitespace-pre px-3 py-0 font-mono text-xs text-green-800 dark:text-green-300">+{line.content}</span>
             </div>
           );
         }
@@ -224,7 +224,7 @@ function UnifiedDiff({ lines }: { lines: ParsedLine[] }) {
             <div key={i} className="flex bg-red-50 dark:bg-red-950/40">
               <span className={cn(NUM, "bg-red-100/60 dark:bg-red-900/40")}>{line.oldLine}</span>
               <span className={NUM} />
-              <span className="flex-1 whitespace-pre-wrap px-3 py-0 font-mono text-xs text-red-800 dark:text-red-300">-{line.content}</span>
+              <span className="flex-1 whitespace-pre px-3 py-0 font-mono text-xs text-red-800 dark:text-red-300">-{line.content}</span>
             </div>
           );
         }
@@ -232,7 +232,7 @@ function UnifiedDiff({ lines }: { lines: ParsedLine[] }) {
           <div key={i} className="flex">
             <span className={NUM}>{line.oldLine}</span>
             <span className={NUM}>{line.newLine}</span>
-            <span className="flex-1 whitespace-pre-wrap px-3 py-0 font-mono text-xs text-foreground"> {line.content}</span>
+            <span className="flex-1 whitespace-pre px-3 py-0 font-mono text-xs text-foreground"> {line.content}</span>
           </div>
         );
       })}
@@ -242,12 +242,12 @@ function UnifiedDiff({ lines }: { lines: ParsedLine[] }) {
 
 function SplitDiff({ rows }: { rows: SplitRow[] }) {
   return (
-    <div>
+    <div className="min-w-full">
       {rows.map((row, i) => {
         if (row.type === "hunkHeader") {
           return (
             <div key={i} className="flex bg-muted">
-              <span className="flex-1 whitespace-pre-wrap px-3 py-0.5 font-mono text-xs text-muted-foreground">{row.header}</span>
+              <span className="flex-1 whitespace-pre px-3 py-0.5 font-mono text-xs text-muted-foreground">{row.header}</span>
             </div>
           );
         }
@@ -257,16 +257,16 @@ function SplitDiff({ rows }: { rows: SplitRow[] }) {
 
         return (
           <div key={i} className="flex min-w-0">
-            <div className={cn("flex min-w-0 flex-1 overflow-hidden", isOldChange && "bg-red-50 dark:bg-red-950/40")}>
+            <div className={cn("flex min-w-0 flex-1 overflow-x-auto", isOldChange && "bg-red-50 dark:bg-red-950/40")}>
               <span className={cn(NUM, isOldChange ? "bg-red-100/60 dark:bg-red-900/40" : "")}>{row.oldLine ?? ""}</span>
-              <span className={cn("flex-1 whitespace-pre-wrap px-3 py-0 font-mono text-xs", isOldChange ? "text-red-800 dark:text-red-300" : "text-foreground")}>
+              <span className={cn("flex-1 whitespace-pre px-3 py-0 font-mono text-xs", isOldChange ? "text-red-800 dark:text-red-300" : "text-foreground")}>
                 {row.oldContent ?? ""}
               </span>
             </div>
             <div className="w-px shrink-0 bg-border" />
-            <div className={cn("flex min-w-0 flex-1 overflow-hidden", isNewChange && "bg-green-50 dark:bg-green-950/40")}>
+            <div className={cn("flex min-w-0 flex-1 overflow-x-auto", isNewChange && "bg-green-50 dark:bg-green-950/40")}>
               <span className={cn(NUM, isNewChange ? "bg-green-100/60 dark:bg-green-900/40" : "")}>{row.newLine ?? ""}</span>
-              <span className={cn("flex-1 whitespace-pre-wrap px-3 py-0 font-mono text-xs", isNewChange ? "text-green-800 dark:text-green-300" : "text-foreground")}>
+              <span className={cn("flex-1 whitespace-pre px-3 py-0 font-mono text-xs", isNewChange ? "text-green-800 dark:text-green-300" : "text-foreground")}>
                 {row.newContent ?? ""}
               </span>
             </div>
@@ -285,7 +285,7 @@ function FilePatch({ file, mode }: { file: PatchFile; mode: DiffMode }) {
   const splitRows = mode === "split" ? toSplitRows(lines) : [];
 
   return (
-    <div id={toAnchorId(file.filename)} className="scroll-mt-12 overflow-hidden rounded-lg border bg-card">
+    <div id={toAnchorId(file.filename)} className="scroll-mt-12 rounded-lg border bg-card">
       <div className="flex items-center gap-3 px-4 py-3">
         <span className="min-w-0 flex-1 truncate font-mono text-xs">{file.filename}</span>
         <span className="shrink-0 text-xs text-green-600">+{file.additions}</span>
@@ -299,7 +299,7 @@ function FilePatch({ file, mode }: { file: PatchFile; mode: DiffMode }) {
         </button>
       </div>
       {open && (
-        <div className="border-t">
+        <div className="overflow-x-auto border-t">
           {file.patch === null ? (
             <p className="px-4 py-3 text-xs text-muted-foreground">Binary file — no diff available.</p>
           ) : mode === "unified" ? (
@@ -352,27 +352,12 @@ export function DiffView({ owner, repo, prNumber }: DiffViewProps) {
             <ArrowLeft className="size-3.5" />
             Back to PR #{prNumber}
           </Link>
-          <div className="flex items-center gap-0.5 rounded-md border p-0.5">
-            {(["unified", "split"] as const).map((m) => (
-              <button
-                key={m}
-                onClick={() => setMode(m)}
-                className={cn(
-                  "relative rounded px-2.5 py-1 text-xs capitalize transition-colors",
-                  mode === m ? "text-background" : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {mode === m && (
-                  <motion.div
-                    layoutId="diff-mode-indicator"
-                    className="absolute inset-0 rounded bg-foreground"
-                    transition={{ type: "spring", bounce: 0.2, duration: 0.3 }}
-                  />
-                )}
-                <span className="relative z-10 capitalize">{m}</span>
-              </button>
-            ))}
-          </div>
+          <Tabs value={mode} onValueChange={(v) => setMode(v as DiffMode)}>
+            <TabsList>
+              <TabsTrigger value="unified">Unified</TabsTrigger>
+              <TabsTrigger value="split">Split</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
 
         {/* File patches */}
