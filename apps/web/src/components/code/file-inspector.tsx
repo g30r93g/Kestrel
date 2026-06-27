@@ -137,13 +137,9 @@ function FileContent({
                   >
                     {lineNo}
                   </TooltipTrigger>
-                  <TooltipContent side="right" className="max-w-56 space-y-0.5 text-left">
-                    <div className="font-mono">
-                      {range.commitSha}
-                      <span className="ml-1.5 font-sans opacity-70">
-                        {formatDate(range.commitDate)}
-                      </span>
-                    </div>
+                  <TooltipContent side="right" className="max-w-56 space-y-0.5 text-left flex flex-col">
+                    <div className="font-mono">{range.commitSha}</div>
+                    <div className="opacity-70">{formatDate(range.commitDate)}</div>
                     <div className="opacity-90">{range.commitMessage}</div>
                     {range.prNumber && (
                       <div className="opacity-70">
