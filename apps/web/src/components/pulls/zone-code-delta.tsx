@@ -1,6 +1,43 @@
 "use client";
 
-import type { PullRequest, PRFile } from "@/lib/github/types";
+import type { PRFile, PullRequest } from "@/lib/github/types";
+import { Skeleton } from "@/components/ui/skeleton";
+import { AlertTriangle, FileCode } from "lucide-react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+
+const RISKY_PATTERNS: Array<{ pattern: RegExp; label: string }> = [
+  { pattern: /migration/i, label: "migrations" },
+  { pattern: /auth/i, label: "auth" },
+  { pattern: /\.env|secrets?/i, label: "secrets / env" },
+  { pattern: /\.github\/workflows\//i, label: "CI config" },
+  { pattern: /package-lock\.json|yarn\.lock|pnpm-lock/i, label: "lockfiles" },
+  { pattern: /schema\.(ts|js|prisma|sql)/i, label: "schema" },
+];
+
+function detectRiskySurfaces(files: PRFile[]): string[] {
+  const found = new Set<string>();
+  for (const f of files) {
+    for (const { pattern, label } of RISKY_PATTERNS) {
+      if (pattern.test(f.filename)) found.add(label);
+    }
+  }
+  return [...found];
+}
+
+function topDirs(files: PRFile[], limit = 3): string[] {
+  const counts = new Map<string, number>();
+  for (const f of files) {
+    const dir = f.filename.includes("/")
+      ? f.filename.split("/").slice(0, 2).join("/")
+      : "(root)";
+    counts.set(dir, (counts.get(dir) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([dir]) => dir);
+}
 
 export interface ZoneCodeDeltaProps {
   pr: PullRequest | null;
@@ -9,6 +46,70 @@ export interface ZoneCodeDeltaProps {
   error: boolean;
 }
 
-export function ZoneCodeDelta(_props: ZoneCodeDeltaProps) {
-  return null;
+export function ZoneCodeDelta({ pr, files, loading, error }: ZoneCodeDeltaProps) {
+  const params = useParams<{ owner: string; rest?: string[] }>();
+  const owner = params.owner;
+  const repo = params.rest?.[0];
+  const prNumber = params.rest?.[2];
+  const diffHref =
+    owner && repo && prNumber
+      ? `/${owner}/${repo}/pulls/${prNumber}/diff`
+      : "#";
+
+  const riskySurfaces = detectRiskySurfaces(files);
+  const dirs = topDirs(files);
+
+  return (
+    <div className="rounded-lg border bg-card p-4">
+      <h2 className="mb-3 text-sm font-medium">Code Delta</h2>
+
+      {error && (
+        <p className="text-xs text-destructive">Diff stats unavailable.</p>
+      )}
+
+      {loading && (
+        <div className="space-y-2">
+          <Skeleton className="h-5 w-32" />
+          <Skeleton className="h-4 w-24" />
+        </div>
+      )}
+
+      {!loading && !error && pr && (
+        <>
+          <div className="flex items-baseline gap-2 text-sm">
+            <span className="font-mono text-green-600">+{pr.additions}</span>
+            <span className="font-mono text-red-500">−{pr.deletions}</span>
+            <span className="text-muted-foreground">
+              · {pr.changedFiles} file{pr.changedFiles !== 1 ? "s" : ""}
+            </span>
+          </div>
+
+          {dirs.length > 0 && (
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              Heavy: {dirs.join(", ")}
+            </p>
+          )}
+
+          {riskySurfaces.length > 0 && (
+            <div className="mt-2 flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+              <AlertTriangle className="size-3.5 shrink-0" />
+              touches {riskySurfaces.join(", ")}
+            </div>
+          )}
+
+          <Link
+            href={diffHref}
+            className="mt-3 flex items-center gap-1 text-xs text-muted-foreground underline hover:text-foreground"
+          >
+            <FileCode className="size-3.5" />
+            Open diff
+          </Link>
+        </>
+      )}
+
+      {!loading && !error && !pr && (
+        <p className="text-xs text-muted-foreground">No file changes.</p>
+      )}
+    </div>
+  );
 }
