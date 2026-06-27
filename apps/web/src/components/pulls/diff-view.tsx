@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronToggle } from "@/components/ui/chevron-toggle";
 import { cn } from "@/lib/utils";
 import { ArrowLeft, ChevronRight, File, Folder, FolderOpen } from "lucide-react";
+import { motion } from "motion/react";
 import Link from "next/link";
 import { useCallback, useState } from "react";
 import useSWR from "swr";
@@ -356,11 +357,18 @@ export function DiffView({ owner, repo, prNumber }: DiffViewProps) {
                 key={m}
                 onClick={() => setMode(m)}
                 className={cn(
-                  "rounded px-2.5 py-1 text-xs capitalize transition-colors",
-                  mode === m ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground",
+                  "relative rounded px-2.5 py-1 text-xs capitalize transition-colors",
+                  mode === m ? "text-background" : "text-muted-foreground hover:text-foreground",
                 )}
               >
-                {m}
+                {mode === m && (
+                  <motion.div
+                    layoutId="diff-mode-indicator"
+                    className="absolute inset-0 rounded bg-foreground"
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.3 }}
+                  />
+                )}
+                <span className="relative z-10 capitalize">{m}</span>
               </button>
             ))}
           </div>
