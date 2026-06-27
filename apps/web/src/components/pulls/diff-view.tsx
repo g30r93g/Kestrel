@@ -1,7 +1,7 @@
 "use client";
 
 import { fetchPullRequest, fetchPullRequestPatches, type PatchFile } from "@/lib/github/pulls";
-import { ReviewDraftProvider, ReviewDraftContext } from "@/components/pulls/review-draft-context";
+import { ReviewDraftProvider, ReviewDraftContext, useReviewDraft } from "@/components/pulls/review-draft-context";
 import { InlineCommentForm, PendingCommentRow } from "@/components/pulls/inline-comment-form";
 import type { PendingReviewComment } from "@/lib/github/types";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -473,6 +473,61 @@ function SplitDiff({ rows, reviewProps }: { rows: SplitRow[]; reviewProps?: File
 
 // ─── File Patch Card ──────────────────────────────────────────────────────────
 
+function FilePatchReviewHeader({
+  filename,
+  pendingFileLevelComments,
+  onUpdateComment,
+  onRemoveComment,
+}: {
+  filename: string;
+  pendingFileLevelComments: PendingReviewComment[];
+  onUpdateComment: (id: string, body: string) => void;
+  onRemoveComment: (id: string) => void;
+}) {
+  const { draft, addComment, toggleFile } = useReviewDraft();
+  const isReviewed = draft.markedFiles.includes(filename);
+  const [showFileComment, setShowFileComment] = useState(false);
+
+  return (
+    <>
+      <label className="flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground select-none hover:text-foreground transition-colors">
+        <input
+          type="checkbox"
+          checked={isReviewed}
+          onChange={() => toggleFile(filename)}
+          className="size-3.5 accent-foreground"
+        />
+        Reviewed
+      </label>
+      <button
+        onClick={() => setShowFileComment((v) => !v)}
+        className="flex items-center gap-1 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline transition-colors"
+      >
+        Add comment
+      </button>
+      {showFileComment && (
+        <div className="absolute left-0 right-0 top-full z-10 border-t bg-card px-4 py-3 shadow-md">
+          <InlineCommentForm
+            onSubmit={(body) => {
+              addComment({ path: filename, body, line: 1, side: "RIGHT", isFileLevel: true });
+              setShowFileComment(false);
+            }}
+            onCancel={() => setShowFileComment(false)}
+            submitLabel="Add file comment"
+          />
+        </div>
+      )}
+      {pendingFileLevelComments.length > 0 && (
+        <PendingCommentRow
+          comments={pendingFileLevelComments}
+          onUpdate={onUpdateComment}
+          onRemove={onRemoveComment}
+        />
+      )}
+    </>
+  );
+}
+
 function FilePatch({
   file,
   mode,
@@ -488,12 +543,22 @@ function FilePatch({
   const lines = file.patch ? parsePatch(file.patch) : [];
   const splitRows = mode === "split" ? toSplitRows(lines) : [];
 
+  const pendingFileLevelComments = fileReviewProps?.pendingComments.filter((c) => c.isFileLevel) ?? [];
+
   return (
-    <div id={toAnchorId(file.filename)} className="scroll-mt-12 rounded-lg border bg-card">
+    <div id={toAnchorId(file.filename)} className="relative scroll-mt-12 rounded-lg border bg-card">
       <div className="flex items-center gap-3 px-4 py-3">
         <span className="min-w-0 flex-1 truncate font-mono text-xs">{file.filename}</span>
         <span className="shrink-0 text-xs text-green-600">+{file.additions}</span>
         <span className="shrink-0 text-xs text-red-500">−{file.deletions}</span>
+        {reviewMode && fileReviewProps && (
+          <FilePatchReviewHeader
+            filename={file.filename}
+            pendingFileLevelComments={pendingFileLevelComments}
+            onUpdateComment={fileReviewProps.onUpdateComment}
+            onRemoveComment={fileReviewProps.onRemoveComment}
+          />
+        )}
         <button
           onClick={() => setOpen((v) => !v)}
           className="ml-1 shrink-0 text-muted-foreground transition-colors hover:text-foreground"
