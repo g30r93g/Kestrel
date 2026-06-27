@@ -475,14 +475,8 @@ function SplitDiff({ rows, reviewProps }: { rows: SplitRow[]; reviewProps?: File
 
 function FilePatchReviewHeader({
   filename,
-  pendingFileLevelComments,
-  onUpdateComment,
-  onRemoveComment,
 }: {
   filename: string;
-  pendingFileLevelComments: PendingReviewComment[];
-  onUpdateComment: (id: string, body: string) => void;
-  onRemoveComment: (id: string) => void;
 }) {
   const { draft, addComment, toggleFile } = useReviewDraft();
   const isReviewed = draft.markedFiles.includes(filename);
@@ -490,7 +484,7 @@ function FilePatchReviewHeader({
 
   return (
     <>
-      <label className="flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground select-none hover:text-foreground transition-colors">
+      <label className="flex cursor-pointer select-none items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground">
         <input
           type="checkbox"
           checked={isReviewed}
@@ -501,7 +495,8 @@ function FilePatchReviewHeader({
       </label>
       <button
         onClick={() => setShowFileComment((v) => !v)}
-        className="flex items-center gap-1 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline transition-colors"
+        aria-expanded={showFileComment}
+        className="flex items-center gap-1 text-xs text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline"
       >
         Add comment
       </button>
@@ -516,13 +511,6 @@ function FilePatchReviewHeader({
             submitLabel="Add file comment"
           />
         </div>
-      )}
-      {pendingFileLevelComments.length > 0 && (
-        <PendingCommentRow
-          comments={pendingFileLevelComments}
-          onUpdate={onUpdateComment}
-          onRemove={onRemoveComment}
-        />
       )}
     </>
   );
@@ -546,18 +534,13 @@ function FilePatch({
   const pendingFileLevelComments = fileReviewProps?.pendingComments.filter((c) => c.isFileLevel) ?? [];
 
   return (
-    <div id={toAnchorId(file.filename)} className="relative scroll-mt-12 rounded-lg border bg-card">
-      <div className="flex items-center gap-3 px-4 py-3">
+    <div id={toAnchorId(file.filename)} className="scroll-mt-12 rounded-lg border bg-card">
+      <div className="relative flex items-center gap-3 px-4 py-3">
         <span className="min-w-0 flex-1 truncate font-mono text-xs">{file.filename}</span>
         <span className="shrink-0 text-xs text-green-600">+{file.additions}</span>
         <span className="shrink-0 text-xs text-red-500">−{file.deletions}</span>
         {reviewMode && fileReviewProps && (
-          <FilePatchReviewHeader
-            filename={file.filename}
-            pendingFileLevelComments={pendingFileLevelComments}
-            onUpdateComment={fileReviewProps.onUpdateComment}
-            onRemoveComment={fileReviewProps.onRemoveComment}
-          />
+          <FilePatchReviewHeader filename={file.filename} />
         )}
         <button
           onClick={() => setOpen((v) => !v)}
@@ -567,6 +550,13 @@ function FilePatch({
           <ChevronToggle open={open} className="size-4" />
         </button>
       </div>
+      {pendingFileLevelComments.length > 0 && (
+        <PendingCommentRow
+          comments={pendingFileLevelComments}
+          onUpdate={fileReviewProps!.onUpdateComment}
+          onRemove={fileReviewProps!.onRemoveComment}
+        />
+      )}
       {open && (
         <div className="overflow-x-auto border-t">
           {file.patch === null ? (
