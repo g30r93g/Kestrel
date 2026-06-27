@@ -251,7 +251,7 @@ function BranchListItem({ branch }: { branch: BranchDetail }) {
 
 function BranchCard({ branch }: { branch: BranchDetail }) {
   return (
-    <div className="flex flex-col gap-3 rounded-lg border p-4 transition-colors hover:bg-muted/30">
+    <div className="flex flex-col gap-4 rounded-lg border p-4 transition-colors hover:bg-muted/30">
       <div className="space-y-1">
         <div className="flex items-start justify-between gap-2">
           <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -279,7 +279,7 @@ function BranchCard({ branch }: { branch: BranchDetail }) {
         )}
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 border-t pt-3">
+      <div className="flex flex-wrap items-center gap-3 border-t pt-4">
         <CheckStatusBadge
           status={branch.checkStatus}
           count={branch.checkCount}
@@ -321,9 +321,9 @@ function ListSkeleton() {
 
 function CardSkeleton() {
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="rounded-lg border p-4 space-y-3">
+        <div key={i} className="rounded-lg border p-4 space-y-4">
           <div className="space-y-2">
             <Skeleton className="h-4 w-36" />
             <Skeleton className="h-3 w-full" />
@@ -445,7 +445,7 @@ export function BranchesView({
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((branch) => (
             <BranchCard key={branch.name} branch={branch} />
           ))}

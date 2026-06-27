@@ -58,15 +58,18 @@ export async function fetchBranchDetails(
                 repo,
                 basehead: `${defaultBranch}...${branch.name}`,
               }),
-          octokit.rest.pulls.list({
-            owner,
-            repo,
-            head: `${owner}:${branch.name}`,
-            state: "all",
-            per_page: 1,
-            sort: "updated",
-            direction: "desc",
-          }),
+          isDefault
+            ? Promise.resolve(null)
+            : octokit.rest.pulls.list({
+                owner,
+                repo,
+                head: `${owner}:${branch.name}`,
+                base: defaultBranch,
+                state: "all",
+                per_page: 1,
+                sort: "updated",
+                direction: "desc",
+              }),
         ]);
 
       const commit =
@@ -78,7 +81,7 @@ export async function fetchBranchDetails(
       const compare =
         compareRes.status === "fulfilled" ? compareRes.value?.data : null;
       const prs =
-        prsRes.status === "fulfilled" ? prsRes.value.data : [];
+        prsRes.status === "fulfilled" ? (prsRes.value?.data ?? []) : [];
 
       const { status: checkStatus, count: checkCount } =
         aggregateChecks(checkRuns);
