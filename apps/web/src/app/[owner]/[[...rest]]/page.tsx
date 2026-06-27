@@ -45,7 +45,7 @@ export default async function DashboardPage({
   // Issues: /{owner}/{repo}/issues
   if (segments.length >= 2 && segments[1] === "issues") {
     const repo = segments[0];
-    return <IssuesView owner={owner} repo={repo} />;
+    return <IssuesView key={`${owner}/${repo}`} owner={owner} repo={repo} />;
   }
 
   // Branches: /{owner}/{repo}/branches[/{filter}]
