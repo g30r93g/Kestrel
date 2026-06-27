@@ -121,13 +121,10 @@ export const repoGroups: NavGroup[] = [
         leaf("requested", "Review requests", GitPullRequest),
         leaf("merged", "Merged", GitPullRequest),
         leaf("drafts", "Drafts", GitPullRequest),
+        leaf("failing", "Failing checks", CircleCheck, "failing"),
+        leaf("running", "Running", CircleCheck),
       ], 5),
       leaf("issues", "Issues", CircleDot),
-      drill("checks", "Checks", CircleCheck, [
-        leaf("failing", "Failing", CircleCheck, ""),
-        leaf("running", "Running", CircleCheck),
-        leaf("all", "All", CircleCheck),
-      ], 1),
     ],
   },
 ];
