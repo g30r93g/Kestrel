@@ -2,6 +2,7 @@ import { resolveNav } from "@/lib/nav-tree";
 import { getOctokit } from "@/lib/github/client";
 import { BranchesView } from "@/components/branches/branches-view";
 import { CodeView } from "@/components/code/code-view";
+import { IssuesView } from "@/components/issues/issues-view";
 import { PackagesView } from "@/components/packages/packages-view";
 import { TagsAndReleasesView } from "@/components/tags-and-releases/tags-and-releases-view";
 import type { BranchFilter } from "@/lib/github/types";
@@ -39,6 +40,12 @@ export default async function DashboardPage({
         <PackagesView key={`${owner}/${repo}`} owner={owner} repo={repo} />
       </div>
     );
+  }
+
+  // Issues: /{owner}/{repo}/issues
+  if (segments.length >= 2 && segments[1] === "issues") {
+    const repo = segments[0];
+    return <IssuesView owner={owner} repo={repo} />;
   }
 
   // Branches: /{owner}/{repo}/branches[/{filter}]
