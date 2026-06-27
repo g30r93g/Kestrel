@@ -105,6 +105,7 @@ export const repoGroups: NavGroup[] = [
         leaf("stale", "Stale", GitBranch),
       ]),
       leaf("releases", "Tags & Releases", Tag),
+      leaf("packages", "Packages", Package),
     ],
   },
   {
@@ -139,7 +140,6 @@ export const repoGroups: NavGroup[] = [
     nodes: [
       leaf("people", "People", Users),
       leaf("projects", "Projects", LayoutGrid),
-      leaf("packages", "Packages", Package),
     ],
   },
 ];
