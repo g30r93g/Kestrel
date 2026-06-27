@@ -127,7 +127,7 @@ export const repoGroups: NavGroup[] = [
         leaf("yours", "Yours", CircleDot),
         leaf("assigned", "Assigned", CircleDot),
         leaf("mentions", "Mentions", CircleDot),
-      ], 8),
+      ]),
       drill("checks", "Checks", CircleCheck, [
         leaf("failing", "Failing", CircleCheck, ""),
         leaf("running", "Running", CircleCheck),
