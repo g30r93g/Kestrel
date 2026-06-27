@@ -42,6 +42,27 @@ export interface BranchDetail {
   pullRequest: BranchPR | null;
 }
 
+export interface TagDetail {
+  name: string;
+  sha: string;
+  kind: "annotated" | "lightweight";
+  message: string;
+  tagger: {
+    name: string;
+    login: string;
+    avatarUrl: string;
+    date: string;
+  };
+  zipballUrl: string;
+  tarballUrl: string;
+  release: {
+    name: string;
+    url: string;
+    isPrerelease: boolean;
+    isDraft: boolean;
+  } | null;
+}
+
 export interface TreeEntry {
   name: string;
   path: string;
