@@ -6,6 +6,7 @@ import { IssuesView } from "@/components/issues/issues-view";
 import { PackagesView } from "@/components/packages/packages-view";
 import { TagsAndReleasesView } from "@/components/tags-and-releases/tags-and-releases-view";
 import { PullsView } from "@/components/pulls/pulls-view";
+import { DiffView } from "@/components/pulls/diff-view";
 import type { BranchFilter } from "@/lib/github/types";
 
 export default async function DashboardPage({
@@ -66,6 +67,12 @@ export default async function DashboardPage({
     }
 
     const prNumber = prNumberStr ? parseInt(prNumberStr, 10) : undefined;
+    const subView = segments[3];
+
+    if (subView === "diff" && prNumber !== undefined) {
+      return <DiffView owner={owner} repo={repo} prNumber={prNumber} />;
+    }
+
     return <PullsView owner={owner} repo={repo} prNumber={prNumber} />;
   }
 

@@ -365,6 +365,39 @@ export async function fetchPullRequestFiles(
   }
 }
 
+export interface PatchFile {
+  filename: string;
+  status: PRFile["status"];
+  additions: number;
+  deletions: number;
+  patch: string | null;
+}
+
+export async function fetchPullRequestPatches(
+  owner: string,
+  repo: string,
+  pullNumber: number,
+): Promise<PatchFile[]> {
+  const octokit = await getOctokit();
+  try {
+    const { data } = await octokit.rest.pulls.listFiles({
+      owner,
+      repo,
+      pull_number: pullNumber,
+      per_page: 100,
+    });
+    return data.map((f) => ({
+      filename: f.filename,
+      status: f.status as PRFile["status"],
+      additions: f.additions,
+      deletions: f.deletions,
+      patch: (f as { patch?: string }).patch ?? null,
+    }));
+  } catch {
+    return [];
+  }
+}
+
 function mapEventType(event: string): PRActivity["type"] {
   switch (event) {
     case "committed": return "committed";
