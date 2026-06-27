@@ -155,19 +155,9 @@ export function resolveNav(owner: string, segments: string[]): NavRenderModel {
 
   const [seg0, seg1] = segments;
 
-  // Owner-wide queue drilled into its sub-filters.
+  // Owner-wide queue — stay at owner root, highlight the section.
   if (ownerQueueIds.has(seg0)) {
-    const queue = findTopNode(ownerRootGroups, seg0);
-    if (queue?.kind === "drill") {
-      return {
-        context: "owner",
-        back: { label: "Back", href: ownerBase },
-        header: { label: queue.label, icon: queue.icon },
-        groups: [{ id: queue.id, nodes: queue.children ?? [] }],
-        activeId: seg1,
-        basePath: `${ownerBase}/${seg0}`,
-      };
-    }
+    return { context: "owner", groups: ownerRootGroups, activeId: seg0, basePath: ownerBase };
   }
 
   // Place leaf → content list; sidebar stays at owner root, place active.
@@ -181,18 +171,10 @@ export function resolveNav(owner: string, segments: string[]): NavRenderModel {
     return { context: "repo", groups: repoGroups, pinned: settingsNode, basePath: repoBase };
   }
 
-  // Drilled into a repo node's sub-views.
+  // Drilled into a repo node — stay at repo root, highlight the section.
   const node = findTopNode(repoGroups, seg1);
   if (node?.kind === "drill") {
-    return {
-      context: "repo",
-      back: { label: "Back", href: repoBase },
-      header: { label: node.label, icon: node.icon },
-      groups: [{ id: node.id, nodes: node.children ?? [] }],
-      pinned: settingsNode,
-      activeId: segments[2],
-      basePath: `${repoBase}/${seg1}`,
-    };
+    return { context: "repo", groups: repoGroups, pinned: settingsNode, activeId: seg1, basePath: repoBase };
   }
 
   // Repo leaf section (code, tags, settings, …) — repo root nav, section active.
