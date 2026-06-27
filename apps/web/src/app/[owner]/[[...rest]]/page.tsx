@@ -8,7 +8,8 @@ import { TagsAndReleasesView } from "@/components/tags-and-releases/tags-and-rel
 import { PullsView } from "@/components/pulls/pulls-view";
 import { DiffView } from "@/components/pulls/diff-view";
 import { ChecksView } from "@/components/pulls/checks-view";
-import type { BranchFilter } from "@/lib/github/types";
+import { ReviewsView } from "@/components/pulls/reviews-view";
+import type { BranchFilter, ReviewsFilter } from "@/lib/github/types";
 
 export default async function DashboardPage({
   params,
@@ -49,6 +50,13 @@ export default async function DashboardPage({
   if (segments.length >= 2 && segments[1] === "issues") {
     const repo = segments[0];
     return <IssuesView key={`${owner}/${repo}`} owner={owner} repo={repo} />;
+  }
+
+  // Reviews queue: /{owner}/{repo}/reviews[/{filter}]
+  if (segments.length >= 2 && segments[1] === "reviews") {
+    const repo = segments[0];
+    const filter = (segments[2] ?? "requested") as ReviewsFilter;
+    return <ReviewsView owner={owner} repo={repo} filter={filter} />;
   }
 
   // Pull requests: /{owner}/{repo}/pulls[/{number}]
