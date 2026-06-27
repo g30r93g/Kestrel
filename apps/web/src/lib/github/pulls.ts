@@ -16,6 +16,7 @@ import type {
   PRReview,
   PRReviewState,
   PRThread,
+  PRCollaborator,
 } from "./types";
 
 // Logins that post automated comments — filtered out of human conversation (Zone G)
@@ -546,5 +547,22 @@ export async function fetchCheckRunDetails(
     };
   } catch {
     return null;
+  }
+}
+
+export async function fetchCollaborators(
+  owner: string,
+  repo: string,
+): Promise<PRCollaborator[]> {
+  const octokit = await getOctokit();
+  try {
+    const { data } = await octokit.rest.repos.listCollaborators({
+      owner,
+      repo,
+      per_page: 100,
+    });
+    return data.map((u) => ({ login: u.login, avatarUrl: u.avatar_url }));
+  } catch {
+    return [];
   }
 }

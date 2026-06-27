@@ -8,6 +8,15 @@ export async function submitReview(
   pullNumber: number,
   body: string,
   event: "APPROVE" | "REQUEST_CHANGES" | "COMMENT",
+  commitId?: string,
+  comments?: Array<{
+    path: string;
+    line: number;
+    start_line?: number;
+    side?: "LEFT" | "RIGHT";
+    start_side?: "LEFT" | "RIGHT";
+    body: string;
+  }>,
 ): Promise<{ success: boolean; error?: string }> {
   const octokit = await getOctokit();
   try {
@@ -17,10 +26,37 @@ export async function submitReview(
       pull_number: pullNumber,
       body,
       event,
+      ...(commitId ? { commit_id: commitId } : {}),
+      ...(comments?.length ? { comments } : {}),
     });
     return { success: true };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Review failed" };
+  }
+}
+
+export async function createFileComment(
+  owner: string,
+  repo: string,
+  pullNumber: number,
+  commitId: string,
+  path: string,
+  body: string,
+): Promise<{ success: boolean; error?: string }> {
+  const octokit = await getOctokit();
+  try {
+    await octokit.request("POST /repos/{owner}/{repo}/pulls/{pull_number}/comments", {
+      owner,
+      repo,
+      pull_number: pullNumber,
+      commit_id: commitId,
+      path,
+      body,
+      subject_type: "file",
+    });
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Comment failed" };
   }
 }
 
