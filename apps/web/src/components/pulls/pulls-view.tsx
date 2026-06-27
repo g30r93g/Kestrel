@@ -91,6 +91,7 @@ export function PullsView({ owner, repo, prNumber }: PullsViewProps) {
         error={!!prErr}
       />
       <ZoneVerdict
+        pr={pr ?? null}
         verdict={verdict}
         loading={prLoading}
         error={!!prErr}
