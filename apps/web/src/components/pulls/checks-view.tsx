@@ -1,35 +1,28 @@
 "use client";
 
-import {
-  fetchCheckRunDetails,
-  fetchPullRequest,
-  fetchPullRequestChecks,
-} from "@/lib/github/pulls";
-import type { CheckRunDetail, CheckStep, PRCheckRun } from "@/lib/github/types";
-import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
 import { Badge } from "@/components/reui/badge";
-import { Frame, FrameHeader, FramePanel } from "@/components/reui/frame";
 import {
   Timeline,
-  TimelineContent,
   TimelineHeader,
   TimelineIndicator,
   TimelineItem,
   TimelineSeparator,
   TimelineTitle,
 } from "@/components/reui/timeline";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
+import {
+  fetchCheckRunDetails,
+  fetchPullRequest,
+  fetchPullRequestChecks,
+} from "@/lib/github/pulls";
+import type { CheckRunDetail, CheckStep, PRCheckRun } from "@/lib/github/types";
+import { cn } from "@/lib/utils";
 import {
   ArrowLeft,
   CheckIcon,
   ChevronRight,
-  ChevronRightIcon,
   CircleIcon,
   ExternalLink,
   MinusIcon,
@@ -130,30 +123,30 @@ function TreeConnector() {
 
 function CheckStatusIcon({ run }: { run: PRCheckRun }) {
   if (run.status !== "completed")
-    return <Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" />;
+    return <Spinner className="size-4 shrink-0 text-muted-foreground" />;
   if (
     run.conclusion === "success" ||
     run.conclusion === "neutral" ||
     run.conclusion === "skipped"
   )
-    return <CheckCircle2 className="size-4 shrink-0 text-green-500" />;
+    return <CheckIcon className="size-4 shrink-0 text-green-500" />;
   if (
     run.conclusion === "failure" ||
     run.conclusion === "timed_out" ||
     run.conclusion === "action_required"
   )
-    return <XCircle className="size-4 shrink-0 text-destructive" />;
-  return <CircleDot className="size-4 shrink-0 text-muted-foreground" />;
+    return <XIcon className="size-4 shrink-0 text-destructive" />;
+  return <CircleIcon className="size-4 shrink-0 text-muted-foreground" />;
 }
 
 function WorkflowStatusIcon({ group }: { group: WorkflowGroup }) {
   if (group.overallStatus === "failure")
-    return <XCircle className="size-4 shrink-0 text-destructive" />;
+    return <XIcon className="size-4 shrink-0 text-destructive" />;
   if (group.overallStatus === "in_progress")
-    return <Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" />;
+    return <Spinner className="size-4 shrink-0 text-muted-foreground" />;
   if (group.overallStatus === "success")
-    return <CheckCircle2 className="size-4 shrink-0 text-green-500" />;
-  return <CircleDot className="size-4 shrink-0 text-muted-foreground" />;
+    return <CheckIcon className="size-4 shrink-0 text-green-500" />;
+  return <CircleIcon className="size-4 shrink-0 text-muted-foreground" />;
 }
 
 function stepTimelineStatus(step: CheckStep): "completed" | "active" | "pending" | "skipped" | "failed" {
@@ -164,12 +157,20 @@ function stepTimelineStatus(step: CheckStep): "completed" | "active" | "pending"
   return "pending";
 }
 
+const stepIndicatorVariants: Record<ReturnType<typeof stepTimelineStatus>, string> = {
+  completed: "bg-success/10 !border-success/20 text-success",
+  active:    "bg-info/10 !border-info/20 text-info",
+  failed:    "bg-destructive/10 !border-destructive/20 text-destructive",
+  skipped:   "bg-muted/10 !border-muted/20 text-muted-foreground opacity-50",
+  pending:   "bg-muted/40 !border-muted-foreground/20 text-muted-foreground/50",
+};
+
 function StepIndicatorIcon({ status }: { status: ReturnType<typeof stepTimelineStatus> }) {
-  if (status === "completed") return <CheckIcon className="size-3.5" />;
-  if (status === "active") return <Spinner className="size-3.5" />;
-  if (status === "failed") return <XIcon className="size-3.5" />;
-  if (status === "skipped") return <MinusIcon className="size-3.5" />;
-  return <CircleIcon className="size-3.5" />;
+  if (status === "completed") return <CheckIcon className="size-3" />;
+  if (status === "active") return <Spinner className="size-3" />;
+  if (status === "failed") return <XIcon className="size-3" />;
+  if (status === "skipped") return <MinusIcon className="size-3" />;
+  return <CircleIcon className="size-2.5 fill-current" />;
 }
 
 function StepBadge({ status, duration }: { status: ReturnType<typeof stepTimelineStatus>; duration: string | null }) {
@@ -220,7 +221,8 @@ function CheckList({
 
         return (
           <div key={group.runId} className="mb-1">
-            <button
+            <Button
+              variant="ghost"
               onClick={() => onSelect({ kind: "workflow", runId: group.runId })}
               className={cn(
                 "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm font-medium transition-colors hover:bg-muted/60",
@@ -230,12 +232,13 @@ function CheckList({
             >
               <WorkflowStatusIcon group={group} />
               <span className="flex-1 truncate">{group.name}</span>
-            </button>
+            </Button>
             {group.checks.map((check) => {
               const isSelected =
                 selection?.kind === "job" && selection.checkId === check.id;
               return (
-                <button
+                <Button
+                  variant="ghost"
                   key={check.id}
                   onClick={() => onSelect({ kind: "job", checkId: check.id })}
                   className={cn(
@@ -246,7 +249,7 @@ function CheckList({
                   <TreeConnector />
                   <CheckStatusIcon run={check} />
                   <span className="flex-1 truncate">{check.name}</span>
-                </button>
+                </Button>
               );
             })}
           </div>
@@ -261,7 +264,8 @@ function CheckList({
         const isSelected =
           selection?.kind === "job" && selection.checkId === check.id;
         return (
-          <button
+          <Button
+            variant="ghost"
             key={check.id}
             onClick={() => onSelect({ kind: "job", checkId: check.id })}
             className={cn(
@@ -271,7 +275,7 @@ function CheckList({
           >
             <CheckStatusIcon run={check} />
             <span className="flex-1 truncate">{check.name}</span>
-          </button>
+          </Button>
         );
       })}
     </div>
@@ -290,7 +294,8 @@ function WorkflowView({
   return (
     <div className="divide-y rounded-lg border">
       {group.checks.map((check) => (
-        <button
+        <Button
+          variant="ghost"
           key={check.id}
           onClick={() => onSelectJob(check.id)}
           className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/40"
@@ -298,7 +303,7 @@ function WorkflowView({
           <CheckStatusIcon run={check} />
           <span className="flex-1 text-sm">{check.name}</span>
           <ChevronRight className="size-4 shrink-0 text-muted-foreground/50" />
-        </button>
+        </Button>
       ))}
     </div>
   );
@@ -310,31 +315,37 @@ function JobView({ detail }: { detail: CheckRunDetail }) {
   const duration = formatDuration(detail.startedAt, detail.completedAt);
 
   if (detail.steps.length > 0) {
+    const lastCompletedStep = detail.steps.reduce(
+      (last, step) =>
+        step.status === "completed" && step.number > last ? step.number : last,
+      0,
+    );
+
     return (
-      <div className="flex flex-col">
+      <div className="flex flex-col gap-4">
         {duration && (
-          <p className="mb-4 text-xs text-muted-foreground">Total: {duration}</p>
+          <p className="text-xs text-muted-foreground">Total: {duration}</p>
         )}
-        <ol className="relative ml-2 border-l border-border">
+        <Timeline defaultValue={lastCompletedStep}>
           {detail.steps.map((step) => {
+            const status = stepTimelineStatus(step);
             const stepDuration = formatDuration(step.startedAt, step.completedAt);
-            const isSkipped =
-              step.conclusion === "skipped" || step.conclusion === "cancelled";
             return (
-              <li key={step.number} className="mb-4 ml-4 last:mb-0">
-                <div className="absolute -left-2 flex items-center justify-center">
-                  <StepIcon step={step} />
-                </div>
-                <div className={cn("flex items-baseline gap-2", isSkipped && "opacity-50")}>
-                  <span className="text-sm">{step.name}</span>
-                  {stepDuration && (
-                    <span className="text-xs text-muted-foreground">{stepDuration}</span>
-                  )}
-                </div>
-              </li>
+              <TimelineItem key={step.number} step={step.number}>
+                <TimelineHeader className="flex items-center gap-2">
+                  <TimelineSeparator className="bg-border!" />
+                  <TimelineTitle className={cn(status === "skipped" && "opacity-50")}>
+                    {step.name}
+                  </TimelineTitle>
+                  <StepBadge status={status} duration={stepDuration} />
+                  <TimelineIndicator className={cn("flex items-center justify-center border!", stepIndicatorVariants[status])}>
+                    <StepIndicatorIcon status={status} />
+                  </TimelineIndicator>
+                </TimelineHeader>
+              </TimelineItem>
             );
           })}
-        </ol>
+        </Timeline>
       </div>
     );
   }
@@ -469,14 +480,15 @@ export function ChecksView({ owner, repo, prNumber }: ChecksViewProps) {
             <>
               <span className="text-xs text-muted-foreground/40">/</span>
               {effectiveSelection?.kind === "job" ? (
-                <button
+                <Button
+                  variant="link"
                   onClick={() =>
                     setSelection({ kind: "workflow", runId: selectedWorkflow.runId })
                   }
-                  className="shrink-0 text-xs text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline"
+                  className="h-auto shrink-0 p-0 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
                 >
                   {selectedWorkflow.name}
-                </button>
+                </Button>
               ) : (
                 <span className="truncate text-xs font-medium">
                   {selectedWorkflow.name}
