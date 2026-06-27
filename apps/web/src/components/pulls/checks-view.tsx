@@ -326,7 +326,7 @@ function JobView({
   logsLoading,
 }: {
   detail: CheckRunDetail;
-  logs: Record<string, string>;
+  logs: string[];
   logsLoading: boolean;
 }) {
   const duration = formatDuration(detail.startedAt, detail.completedAt);
@@ -338,6 +338,17 @@ function JobView({
       0,
     );
 
+    // Skipped/cancelled steps emit no ##[group] in the log, so map only the
+    // steps that do appear — in step.number order — to log group indices.
+    const SKIPPED = new Set(["skipped", "cancelled"]);
+    const stepToLogIndex = new Map<number, number>();
+    let logIdx = 0;
+    for (const step of [...detail.steps].sort((a, b) => a.number - b.number)) {
+      if (!SKIPPED.has(step.conclusion ?? "")) {
+        stepToLogIndex.set(step.number, logIdx++);
+      }
+    }
+
     return (
       <div className="flex flex-col gap-4">
         {duration && (
@@ -347,7 +358,7 @@ function JobView({
           {detail.steps.map((step) => {
             const status = stepTimelineStatus(step);
             const stepDuration = formatDuration(step.startedAt, step.completedAt);
-            const stepLog = logs[step.name];
+            const stepLog = logs[stepToLogIndex.get(step.number) ?? -1];
             const defaultOpen = status === "active" || status === "failed";
             return (
               <TimelineItem key={step.number} step={step.number} className="ms-10 pb-8">
@@ -480,7 +491,7 @@ export function ChecksView({ owner, repo, prNumber }: ChecksViewProps) {
     ([o, r, id]) => fetchCheckRunDetails(o, r, id),
   );
 
-  const { data: jobLogs = {}, isLoading: logsLoading } = useSWR(
+  const { data: jobLogs = [], isLoading: logsLoading } = useSWR(
     detail?.actionsJobId ? [owner, repo, detail.actionsJobId, "job-logs"] : null,
     ([o, r, id]) => fetchJobLogs(o, r, id),
   );
