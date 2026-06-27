@@ -135,13 +135,6 @@ export const repoGroups: NavGroup[] = [
       ], 1),
     ],
   },
-  {
-    id: "community",
-    nodes: [
-      leaf("people", "People", Users),
-      leaf("projects", "Projects", LayoutGrid),
-    ],
-  },
 ];
 
 export const settingsNode: NavNode = leaf("settings", "Settings", Settings);
