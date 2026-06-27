@@ -3,13 +3,27 @@
 import useSWR from "swr";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Circle, CircleCheck, MessageSquare } from "lucide-react";
+import {
+  Circle,
+  CircleCheck,
+  CircleX,
+  GitCommit,
+  GitPullRequest,
+  Pencil,
+  Tag,
+  Target,
+  UserCheck,
+  UserMinus,
+} from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { fetchIssueDetail, fetchIssueComments } from "@/lib/github/issues";
+import { fetchIssueDetail, fetchIssueTimeline } from "@/lib/github/issues";
 import { formatTimeAgo } from "@/lib/time";
 import { cn } from "@/lib/utils";
-import type { Issue, IssueComment } from "@/lib/github/types";
+import type { Issue, IssueTimelineEvent } from "@/lib/github/types";
+
+type CommentEvent = Extract<IssueTimelineEvent, { kind: "comment" }>;
+type NonCommentEvent = Exclude<IssueTimelineEvent, { kind: "comment" }>;
 
 function IssueHeader({ issue }: { issue: Issue }) {
   const isOpen = issue.state === "open";
@@ -25,11 +39,7 @@ function IssueHeader({ issue }: { issue: Issue }) {
               : "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
           )}
         >
-          {isOpen ? (
-            <Circle className="size-3" />
-          ) : (
-            <CircleCheck className="size-3" />
-          )}
+          {isOpen ? <Circle className="size-3" /> : <CircleCheck className="size-3" />}
           {isOpen ? "Open" : "Closed"}
         </span>
         <span className="text-muted-foreground">
@@ -96,7 +106,7 @@ function MetaSidebar({ issue }: { issue: Issue }) {
   );
 }
 
-function CommentCard({ comment }: { comment: IssueComment }) {
+function CommentCard({ comment }: { comment: CommentEvent }) {
   return (
     <div className="rounded-lg border">
       <div className="flex items-center gap-2 border-b bg-muted/30 px-3 py-2">
@@ -106,15 +116,98 @@ function CommentCard({ comment }: { comment: IssueComment }) {
         </Avatar>
         <span className="text-sm font-medium">{comment.user.login}</span>
         <span className="text-xs text-muted-foreground">·</span>
-        <span className="text-xs text-muted-foreground">
-          {formatTimeAgo(comment.createdAt)}
-        </span>
+        <span className="text-xs text-muted-foreground">{formatTimeAgo(comment.createdAt)}</span>
       </div>
       <div className="px-3 py-3">
         <div className="prose prose-sm dark:prose-invert max-w-none">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{comment.body}</ReactMarkdown>
         </div>
       </div>
+    </div>
+  );
+}
+
+function TimelineEventRow({ event }: { event: NonCommentEvent }) {
+  let Icon = Circle;
+  let iconClass = "text-muted-foreground";
+  let content: React.ReactNode;
+
+  const actor = <span className="font-medium text-foreground">{event.actor.login}</span>;
+
+  switch (event.kind) {
+    case "closed":
+      Icon = CircleX;
+      iconClass = "text-purple-500";
+      content = event.commitId ? (
+        <>{actor} closed this in <code className="rounded bg-muted px-1 font-mono text-[10px]">{event.commitId.slice(0, 7)}</code></>
+      ) : (
+        <>{actor} closed this</>
+      );
+      break;
+    case "reopened":
+      Icon = Circle;
+      iconClass = "text-green-500";
+      content = <>{actor} reopened this</>;
+      break;
+    case "referenced":
+      Icon = GitCommit;
+      content = (
+        <>{actor} referenced this in commit <code className="rounded bg-muted px-1 font-mono text-[10px]">{event.commitId.slice(0, 7)}</code></>
+      );
+      break;
+    case "cross-referenced":
+      Icon = event.source.isPR ? GitPullRequest : Circle;
+      content = (
+        <>
+          {actor} mentioned this in {event.source.isPR ? "PR" : "issue"}{" "}
+          <span className="font-medium text-foreground">
+            #{event.source.number}
+          </span>{" "}
+          <span className="text-muted-foreground italic">{event.source.title}</span>
+        </>
+      );
+      break;
+    case "renamed":
+      Icon = Pencil;
+      content = (
+        <>{actor} renamed this from <span className="line-through">{event.from}</span> to <span className="font-medium text-foreground">{event.to}</span></>
+      );
+      break;
+    case "labeled":
+      Icon = Tag;
+      content = (
+        <>{actor} added label <span className="rounded-full px-1.5 py-0.5 font-medium" style={{ backgroundColor: `#${event.label.color}33`, color: `#${event.label.color}`, border: `1px solid #${event.label.color}55` }}>{event.label.name}</span></>
+      );
+      break;
+    case "unlabeled":
+      Icon = Tag;
+      content = (
+        <>{actor} removed label <span className="rounded-full px-1.5 py-0.5 font-medium opacity-60" style={{ backgroundColor: `#${event.label.color}22`, color: `#${event.label.color}`, border: `1px solid #${event.label.color}44` }}>{event.label.name}</span></>
+      );
+      break;
+    case "assigned":
+      Icon = UserCheck;
+      content = <>{actor} assigned <span className="font-medium text-foreground">{event.assignee.login}</span></>;
+      break;
+    case "unassigned":
+      Icon = UserMinus;
+      content = <>{actor} unassigned <span className="font-medium text-foreground">{event.assignee.login}</span></>;
+      break;
+    case "milestoned":
+      Icon = Target;
+      content = <>{actor} added this to milestone <span className="font-medium text-foreground">{event.milestone}</span></>;
+      break;
+    case "demilestoned":
+      Icon = Target;
+      content = <>{actor} removed this from milestone <span className="font-medium text-foreground">{event.milestone}</span></>;
+      break;
+  }
+
+  return (
+    <div className="flex items-center gap-2 py-0.5 text-xs text-muted-foreground">
+      <Icon className={cn("size-3.5 shrink-0", iconClass)} />
+      <span className="min-w-0 flex-1">{content}</span>
+      <span className="shrink-0">{formatTimeAgo(event.createdAt)}</span>
     </div>
   );
 }
@@ -145,9 +238,9 @@ export function IssueDetail({
     () => fetchIssueDetail(owner, repo, issueNumber),
   );
 
-  const { data: comments = [], isLoading: commentsLoading } = useSWR(
-    ["issue-comments", owner, repo, issueNumber],
-    () => fetchIssueComments(owner, repo, issueNumber),
+  const { data: timeline = [], isLoading: timelineLoading } = useSWR(
+    ["issue-timeline", owner, repo, issueNumber],
+    () => fetchIssueTimeline(owner, repo, issueNumber),
   );
 
   if (issueLoading) return <DetailSkeleton />;
@@ -164,42 +257,33 @@ export function IssueDetail({
       <IssueHeader issue={issue} />
       <div className="flex-1 overflow-y-auto">
         <div className="flex gap-6 p-4">
-          {/* Body + comments */}
+          {/* Body + timeline */}
           <div className="min-w-0 flex-1">
             {issue.body ? (
               <div className="prose prose-sm dark:prose-invert max-w-none">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {issue.body}
-                </ReactMarkdown>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{issue.body}</ReactMarkdown>
               </div>
             ) : (
-              <p className="text-sm italic text-muted-foreground">
-                No description provided.
-              </p>
+              <p className="text-sm italic text-muted-foreground">No description provided.</p>
             )}
 
-            {issue.commentCount > 0 && (
+            {timelineLoading ? (
               <div className="mt-6 space-y-4">
-                <div className="flex items-center gap-2 text-sm font-medium">
-                  <MessageSquare className="size-4" />
-                  {issue.commentCount} Comment
-                  {issue.commentCount !== 1 ? "s" : ""}
-                </div>
-                {commentsLoading ? (
-                  <div className="space-y-4">
-                    {Array.from({ length: 2 }).map((_, i) => (
-                      <Skeleton key={i} className="h-24 w-full rounded-lg" />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {comments.map((comment) => (
-                      <CommentCard key={comment.id} comment={comment} />
-                    ))}
-                  </div>
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <Skeleton key={i} className="h-24 w-full rounded-lg" />
+                ))}
+              </div>
+            ) : timeline.length > 0 ? (
+              <div className="mt-6 space-y-3">
+                {timeline.map((event, i) =>
+                  event.kind === "comment" ? (
+                    <CommentCard key={event.id} comment={event} />
+                  ) : (
+                    <TimelineEventRow key={i} event={event} />
+                  ),
                 )}
               </div>
-            )}
+            ) : null}
           </div>
 
           {/* Metadata sidebar */}
