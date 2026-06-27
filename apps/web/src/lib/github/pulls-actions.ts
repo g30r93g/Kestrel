@@ -180,6 +180,26 @@ export async function reopenPullRequest(
   }
 }
 
+export async function updatePullRequestBody(
+  owner: string,
+  repo: string,
+  pullNumber: number,
+  body: string,
+): Promise<{ success: boolean; error?: string }> {
+  const octokit = await getOctokit();
+  try {
+    await octokit.rest.pulls.update({
+      owner,
+      repo,
+      pull_number: pullNumber,
+      body,
+    });
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Save failed" };
+  }
+}
+
 export async function updateBranch(
   owner: string,
   repo: string,
