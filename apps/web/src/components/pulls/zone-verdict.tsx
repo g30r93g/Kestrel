@@ -132,7 +132,7 @@ export function ZoneVerdict({ pr, verdict, loading, error }: ZoneVerdictProps) {
     setUpdating(true);
     await updateBranch(owner, repo, prNumber);
     setUpdating(false);
-    invalidatePR();
+    mutate([owner, repo, prNumber, "pr"]);
   };
 
   if (error) {
@@ -156,10 +156,11 @@ export function ZoneVerdict({ pr, verdict, loading, error }: ZoneVerdictProps) {
   }
 
   const config = STATUS_CONFIG[verdict.status];
-  const canMerge = pr?.state === "open" && pr?.mergeableState === "mergeable" && verdict.status === "READY";
+  const showMerge = pr?.state === "open" || pr?.state === "draft";
+  const canMerge = showMerge && pr?.mergeableState === "mergeable";
   const canClose = pr?.state === "open" || pr?.state === "draft";
   const canReopen = pr?.state === "closed";
-  const isBehind = pr && pr.behindBy > 0;
+  const isBehind = pr?.state === "open" && pr.behindBy > 0;
 
   return (
     <div className={`rounded-lg border bg-card p-4 ${config.className}`}>
@@ -205,11 +206,14 @@ export function ZoneVerdict({ pr, verdict, loading, error }: ZoneVerdictProps) {
             </button>
           )}
 
-          {canMerge && (
+          {showMerge && (
             <Dialog>
               <DialogTrigger
                 render={
-                  <button className="flex items-center gap-1 font-medium text-foreground underline-offset-2 hover:underline transition-colors" />
+                  <button
+                    disabled={!canMerge}
+                    className="flex items-center gap-1 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline transition-colors disabled:opacity-50 disabled:no-underline disabled:cursor-not-allowed"
+                  />
                 }
               >
                 <GitMerge className="size-3.5" />
@@ -259,7 +263,7 @@ export function ZoneVerdict({ pr, verdict, loading, error }: ZoneVerdictProps) {
                 <DialogFooter showCloseButton>
                   <Button
                     onClick={handleMerge}
-                    disabled={merging}
+                    disabled={merging || !canMerge}
                     className="gap-2"
                   >
                     {merging && <Loader2 className="size-4 animate-spin" />}
