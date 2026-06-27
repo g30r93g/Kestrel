@@ -1,29 +1,11 @@
 "use client";
 
 import type { PRFile, PullRequest } from "@/lib/github/types";
+import { detectRiskySurfaces } from "@/lib/github/pulls-list-utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, FileCode } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-
-const RISKY_PATTERNS: Array<{ pattern: RegExp; label: string }> = [
-  { pattern: /migration/i, label: "migrations" },
-  { pattern: /auth/i, label: "auth" },
-  { pattern: /\.env|secrets?/i, label: "secrets / env" },
-  { pattern: /\.github\/workflows\//i, label: "CI config" },
-  { pattern: /package-lock\.json|yarn\.lock|pnpm-lock/i, label: "lockfiles" },
-  { pattern: /schema\.(ts|js|prisma|sql)/i, label: "schema" },
-];
-
-function detectRiskySurfaces(files: PRFile[]): string[] {
-  const found = new Set<string>();
-  for (const f of files) {
-    for (const { pattern, label } of RISKY_PATTERNS) {
-      if (pattern.test(f.filename)) found.add(label);
-    }
-  }
-  return [...found];
-}
 
 function topDirs(files: PRFile[], limit = 3): string[] {
   const counts = new Map<string, number>();
@@ -56,7 +38,7 @@ export function ZoneCodeDelta({ pr, files, loading, error }: ZoneCodeDeltaProps)
       ? `/${owner}/${repo}/pulls/${prNumber}/diff`
       : "#";
 
-  const riskySurfaces = detectRiskySurfaces(files);
+  const riskySurfaces = detectRiskySurfaces(files.map((f) => f.filename));
   const dirs = topDirs(files);
 
   return (
