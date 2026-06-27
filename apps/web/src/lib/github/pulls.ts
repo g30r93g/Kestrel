@@ -15,7 +15,6 @@ import type {
   PRReview,
   PRReviewState,
   PRThread,
-  PRUser,
 } from "./types";
 
 // Logins that post automated comments — filtered out of human conversation (Zone G)
