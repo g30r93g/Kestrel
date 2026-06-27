@@ -89,6 +89,19 @@ export interface ReleaseAsset {
   downloadUrl: string;
 }
 
+export const PACKAGE_TYPES = ["npm", "maven", "rubygems", "docker", "nuget", "container"] as const;
+export type PackageType = (typeof PACKAGE_TYPES)[number];
+
+export interface PackageDetail {
+  id: number;
+  name: string;
+  packageType: PackageType;
+  visibility: "public" | "private";
+  versionCount: number;
+  updatedAt: string;
+  htmlUrl: string;
+}
+
 export interface TagsAndReleasesItem {
   name: string;
   sha: string;
