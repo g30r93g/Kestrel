@@ -28,12 +28,14 @@ export default async function DashboardPage({
     const { data: ghUser } = await octokit.rest.users.getAuthenticated();
 
     return (
-      <BranchesView
-        owner={owner}
-        repo={repo}
-        filter={filter}
-        currentUserLogin={ghUser.login}
-      />
+      <div className="flex-1 overflow-auto p-4 md:p-6">
+        <BranchesView
+          owner={owner}
+          repo={repo}
+          filter={filter}
+          currentUserLogin={ghUser.login}
+        />
+      </div>
     );
   }
 
