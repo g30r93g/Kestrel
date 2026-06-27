@@ -13,7 +13,9 @@ import {
   SidebarSeparator,
 } from "@/components/ui/sidebar";
 import type { Owner, Repo } from "@/lib/github";
+import { fetchIssues } from "@/lib/github/issues";
 import { type NavNode, nodeHref, resolveNav } from "@/lib/nav-tree";
+import useSWR from "swr";
 import { ChevronLeft } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
@@ -43,6 +45,12 @@ export function NavTree({
   const model = resolveNav(owner, segments);
   const activeRepo = model.context === "repo" ? segments[0] : undefined;
 
+  const { data: issues } = useSWR(
+    activeRepo ? ["issues", owner, activeRepo] : null,
+    () => fetchIssues(owner, activeRepo!),
+  );
+  const openIssueCount = issues?.filter((i) => i.state === "open").length;
+
   // Running row index so tree items stagger up like the picker lists. They
   // mount (and animate) when the panel swaps back to the tree, e.g. after
   // switching repos/owners — not on in-place section navigation.
@@ -51,6 +59,8 @@ export function NavTree({
     const Icon = node.icon;
     const isActive = model.activeId === node.id;
     const delay = navItemDelay(row++);
+    const badge =
+      node.id === "issues" && activeRepo ? openIssueCount : node.badge;
     return (
       <SidebarMenuItem key={node.id}>
         <SidebarMenuButton
@@ -62,7 +72,7 @@ export function NavTree({
         >
           <Icon />
           <span>{node.label}</span>
-          {node.badge ? <span className="ml-auto text-xs text-muted-foreground">{node.badge}</span> : null}
+          {badge != null ? <span className="ml-auto text-xs text-muted-foreground">{badge}</span> : null}
         </SidebarMenuButton>
       </SidebarMenuItem>
     );

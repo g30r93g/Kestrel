@@ -2,8 +2,12 @@ import { resolveNav } from "@/lib/nav-tree";
 import { getOctokit } from "@/lib/github/client";
 import { BranchesView } from "@/components/branches/branches-view";
 import { CodeView } from "@/components/code/code-view";
+import { IssuesView } from "@/components/issues/issues-view";
 import { PackagesView } from "@/components/packages/packages-view";
 import { TagsAndReleasesView } from "@/components/tags-and-releases/tags-and-releases-view";
+import { PullsView } from "@/components/pulls/pulls-view";
+import { DiffView } from "@/components/pulls/diff-view";
+import { ChecksView } from "@/components/pulls/checks-view";
 import type { BranchFilter } from "@/lib/github/types";
 
 export default async function DashboardPage({
@@ -39,6 +43,42 @@ export default async function DashboardPage({
         <PackagesView key={`${owner}/${repo}`} owner={owner} repo={repo} />
       </div>
     );
+  }
+
+  // Issues: /{owner}/{repo}/issues
+  if (segments.length >= 2 && segments[1] === "issues") {
+    const repo = segments[0];
+    return <IssuesView key={`${owner}/${repo}`} owner={owner} repo={repo} />;
+  }
+
+  // Pull requests: /{owner}/{repo}/pulls[/{number}]
+  if (segments.length >= 2 && segments[1] === "pulls") {
+    const repo = segments[0];
+    const prNumberStr = segments[2];
+
+    // /pulls/new is the creation route (Plan 3 — not yet implemented)
+    if (prNumberStr === "new") {
+      return (
+        <div className="p-4 md:p-6">
+          <div className="rounded-lg border border-dashed p-8 text-sm text-muted-foreground">
+            PR creation coming soon.
+          </div>
+        </div>
+      );
+    }
+
+    const prNumber = prNumberStr ? parseInt(prNumberStr, 10) : undefined;
+    const subView = segments[3];
+
+    if (subView === "diff" && prNumber !== undefined) {
+      return <DiffView owner={owner} repo={repo} prNumber={prNumber} />;
+    }
+
+    if (subView === "checks" && prNumber !== undefined) {
+      return <ChecksView owner={owner} repo={repo} prNumber={prNumber} />;
+    }
+
+    return <PullsView owner={owner} repo={repo} prNumber={prNumber} />;
   }
 
   // Branches: /{owner}/{repo}/branches[/{filter}]

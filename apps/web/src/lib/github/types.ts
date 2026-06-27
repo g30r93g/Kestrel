@@ -131,3 +131,283 @@ export interface TagsAndReleasesItem {
     assets: ReleaseAsset[];
   } | null;
 }
+
+export interface IssueLabel {
+  name: string;
+  color: string;
+}
+
+export interface IssueUser {
+  login: string;
+  avatarUrl: string;
+}
+
+export interface IssueMilestone {
+  title: string;
+  number: number;
+}
+
+export type IssueState = "open" | "closed";
+
+export interface Issue {
+  number: number;
+  title: string;
+  state: IssueState;
+  body: string | null;
+  labels: IssueLabel[];
+  assignees: IssueUser[];
+  milestone: IssueMilestone | null;
+  user: IssueUser;
+  createdAt: string;
+  updatedAt: string;
+  commentCount: number;
+}
+
+export interface IssueComment {
+  id: number;
+  user: IssueUser;
+  body: string;
+  createdAt: string;
+}
+
+export interface IssueFilters {
+  labels: string[];
+  assignee: string | null;
+  milestone: string | null;
+  author: string | null;
+}
+
+export type IssueTimelineEvent =
+  | { kind: "comment"; id: number; user: IssueUser; body: string; createdAt: string }
+  | { kind: "cross-referenced"; actor: IssueUser; createdAt: string; source: { isPR: boolean; number: number; title: string; state: "open" | "closed" } }
+  | { kind: "referenced"; actor: IssueUser; commitId: string; createdAt: string }
+  | { kind: "closed"; actor: IssueUser; createdAt: string; commitId: string | null }
+  | { kind: "reopened"; actor: IssueUser; createdAt: string }
+  | { kind: "renamed"; actor: IssueUser; createdAt: string; from: string; to: string }
+  | { kind: "labeled"; actor: IssueUser; createdAt: string; label: IssueLabel }
+  | { kind: "unlabeled"; actor: IssueUser; createdAt: string; label: IssueLabel }
+  | { kind: "assigned"; actor: IssueUser; createdAt: string; assignee: IssueUser }
+  | { kind: "unassigned"; actor: IssueUser; createdAt: string; assignee: IssueUser }
+  | { kind: "milestoned"; actor: IssueUser; createdAt: string; milestone: string }
+  | { kind: "demilestoned"; actor: IssueUser; createdAt: string; milestone: string };
+
+// --- Pull Requests ---
+
+export type PRLifecycleState = "open" | "draft" | "merged" | "closed";
+
+export type PRReviewState =
+  | "APPROVED"
+  | "CHANGES_REQUESTED"
+  | "COMMENTED"
+  | "DISMISSED"
+  | "PENDING";
+
+export type PRMergeableState = "mergeable" | "conflicting" | "unknown";
+
+export type PRCheckStatus =
+  | "queued"
+  | "in_progress"
+  | "completed"
+  | "waiting"
+  | "pending"
+  | "requested";
+
+export type PRCheckConclusion =
+  | "success"
+  | "failure"
+  | "neutral"
+  | "cancelled"
+  | "skipped"
+  | "timed_out"
+  | "action_required"
+  | null;
+
+export interface PRUser {
+  login: string;
+  avatarUrl: string;
+}
+
+export interface PRLabel {
+  name: string;
+  color: string;
+}
+
+export interface PullRequestSummary {
+  number: number;
+  title: string;
+  state: PRLifecycleState;
+  headRef: string;
+  baseRef: string;
+  author: PRUser;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PullRequest extends PullRequestSummary {
+  body: string;
+  headSha: string;
+  commitCount: number;
+  additions: number;
+  deletions: number;
+  changedFiles: number;
+  labels: PRLabel[];
+  assignees: PRUser[];
+  mergedAt: string | null;
+  mergedBy: PRUser | null;
+  autoMergeEnabled: boolean;
+  mergeableState: PRMergeableState;
+  behindBy: number;
+  htmlUrl: string;
+}
+
+export interface PRReview {
+  id: number;
+  reviewer: PRUser;
+  state: PRReviewState;
+  submittedAt: string | null;
+  body: string;
+  isAutomated: boolean;
+}
+
+export interface PRCheckRun {
+  id: number;
+  name: string;
+  status: PRCheckStatus;
+  conclusion: PRCheckConclusion;
+  detailsUrl: string;
+  isRequired: boolean;
+  workflowRunId: number | null;
+  workflowName: string | null;
+}
+
+export interface CheckStep {
+  number: number;
+  name: string;
+  status: string;
+  conclusion: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+}
+
+export interface CheckRunDetail {
+  id: number;
+  name: string;
+  status: PRCheckStatus;
+  conclusion: PRCheckConclusion;
+  detailsUrl: string;
+  startedAt: string | null;
+  completedAt: string | null;
+  output: {
+    title: string | null;
+    summary: string | null;
+    text: string | null;
+  };
+  steps: CheckStep[];
+  actionsJobId: number | null;
+}
+
+export interface PRComment {
+  id: number;
+  author: PRUser;
+  body: string;
+  createdAt: string;
+}
+
+export interface PRThread {
+  id: string;
+  path: string;
+  line: number | null;
+  isResolved: boolean;
+  firstComment: PRComment;
+}
+
+export interface PRFile {
+  filename: string;
+  additions: number;
+  deletions: number;
+  status:
+    | "added"
+    | "removed"
+    | "modified"
+    | "renamed"
+    | "copied"
+    | "changed"
+    | "unchanged";
+}
+
+export type VerdictStatus = "READY" | "NOT_READY" | "MERGED" | "DRAFT" | "CLOSED";
+
+export interface VerdictBlocker {
+  kind: "check" | "review" | "conflict" | "threads" | "policy";
+  label: string;
+}
+
+export interface VerdictState {
+  status: VerdictStatus;
+  blockers: VerdictBlocker[];
+  notables: string[];
+}
+
+export type SignalKind =
+  | "coverage"
+  | "bundle"
+  | "performance"
+  | "security"
+  | "deploy"
+  | "quality"
+  | "visual"
+  | "dependency"
+  | "automated-note";
+
+export interface SignalChip {
+  kind: SignalKind;
+  label: string;
+  value: string;
+  delta?: string;
+  deltaDirection?: "up" | "down" | "neutral";
+  severity: "ok" | "warning" | "error";
+  url?: string;
+}
+
+export interface PRActivity {
+  id: string;
+  type:
+    | "committed"
+    | "reviewed"
+    | "commented"
+    | "merged"
+    | "closed"
+    | "reopened"
+    | "labeled"
+    | "assigned"
+    | "review_requested"
+    | "base_changed"
+    | "other";
+  actor: PRUser | null;
+  detail: string;
+  createdAt: string;
+}
+
+export interface PRCollaborator {
+  login: string;
+  avatarUrl: string;
+}
+
+export interface PendingReviewComment {
+  id: string;
+  path: string;
+  body: string;
+  line: number;
+  startLine?: number;
+  side: "LEFT" | "RIGHT";
+  startSide?: "LEFT" | "RIGHT";
+  isFileLevel?: boolean;
+  quotedText?: string;
+}
+
+export interface ReviewDraft {
+  commitSha: string;
+  comments: PendingReviewComment[];
+  markedFiles: string[];
+  body: string;
+}
