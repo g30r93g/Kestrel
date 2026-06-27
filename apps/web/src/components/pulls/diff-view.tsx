@@ -2,6 +2,7 @@
 
 import { fetchPullRequest, fetchPullRequestPatches, type PatchFile } from "@/lib/github/pulls";
 import { ReviewDraftProvider, ReviewDraftContext } from "@/components/pulls/review-draft-context";
+import { InlineCommentForm, PendingCommentRow } from "@/components/pulls/inline-comment-form";
 import type { PendingReviewComment } from "@/lib/github/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronToggle } from "@/components/ui/chevron-toggle";
@@ -222,83 +223,250 @@ function DiffFileTree({ files }: { files: PatchFile[] }) {
 const NUM = "w-10 shrink-0 select-none border-r px-1.5 text-right font-mono text-xs text-muted-foreground/50";
 
 function UnifiedDiff({ lines, reviewProps }: { lines: ParsedLine[]; reviewProps?: FileReviewProps }) {
-  return (
-    <div className="w-max min-w-full">
-      {lines.map((line, i) => {
-        if (line.type === "hunkHeader") {
-          return (
-            <div key={i} className="flex bg-muted">
-              <span className={NUM} />
-              <span className={NUM} />
-              <span className="flex-1 whitespace-pre px-3 py-0.5 font-mono text-xs text-muted-foreground">{line.content}</span>
-            </div>
-          );
+  const elems: React.ReactNode[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    if (line.type === "hunkHeader") {
+      elems.push(
+        <div key={`h${i}`} className="flex bg-muted">
+          <span className={NUM} />
+          <span className={NUM} />
+          <span className="flex-1 whitespace-pre px-3 py-0.5 font-mono text-xs text-muted-foreground">
+            {line.content}
+          </span>
+        </div>,
+      );
+      continue;
+    }
+
+    const leftNum = line.type !== "add" ? line.oldLine : undefined;
+    const rightNum = line.type !== "remove" ? line.newLine : undefined;
+
+    const sel = reviewProps?.lineSelection;
+    const selMin = sel ? Math.min(sel.anchorLine, sel.activeLine) : 0;
+    const selMax = sel ? Math.max(sel.anchorLine, sel.activeLine) : 0;
+    const leftSel =
+      !!reviewProps && sel?.side === "LEFT" && leftNum !== undefined && leftNum >= selMin && leftNum <= selMax;
+    const rightSel =
+      !!reviewProps && sel?.side === "RIGHT" && rightNum !== undefined && rightNum >= selMin && rightNum <= selMax;
+
+    const makeGutter = (num: number | undefined, side: "LEFT" | "RIGHT", extra?: string) => (
+      <span
+        className={cn(
+          NUM,
+          extra,
+          reviewProps && num !== undefined && "cursor-pointer hover:bg-blue-100/60 dark:hover:bg-blue-900/20",
+          (side === "LEFT" ? leftSel : rightSel) && "bg-blue-200/70 dark:bg-blue-800/50",
+        )}
+        data-line={num}
+        data-side={side}
+        onClick={
+          reviewProps && num !== undefined
+            ? (e) => reviewProps.onLineClick(num, side, e.shiftKey)
+            : undefined
         }
-        if (line.type === "add") {
-          return (
-            <div key={i} className="flex bg-green-50 dark:bg-green-950/40">
-              <span className={NUM} />
-              <span className={cn(NUM, "bg-green-100/60 dark:bg-green-900/40")}>{line.newLine}</span>
-              <span className="flex-1 whitespace-pre px-3 py-0 font-mono text-xs text-green-800 dark:text-green-300">+{line.content}</span>
-            </div>
-          );
-        }
-        if (line.type === "remove") {
-          return (
-            <div key={i} className="flex bg-red-50 dark:bg-red-950/40">
-              <span className={cn(NUM, "bg-red-100/60 dark:bg-red-900/40")}>{line.oldLine}</span>
-              <span className={NUM} />
-              <span className="flex-1 whitespace-pre px-3 py-0 font-mono text-xs text-red-800 dark:text-red-300">-{line.content}</span>
-            </div>
-          );
-        }
-        return (
-          <div key={i} className="flex">
-            <span className={NUM}>{line.oldLine}</span>
-            <span className={NUM}>{line.newLine}</span>
-            <span className="flex-1 whitespace-pre px-3 py-0 font-mono text-xs text-foreground"> {line.content}</span>
-          </div>
+      >
+        {num}
+      </span>
+    );
+
+    const rowBg =
+      line.type === "add"
+        ? "bg-green-50 dark:bg-green-950/40"
+        : line.type === "remove"
+          ? "bg-red-50 dark:bg-red-950/40"
+          : "";
+    const textColor =
+      line.type === "add"
+        ? "text-green-800 dark:text-green-300"
+        : line.type === "remove"
+          ? "text-red-800 dark:text-red-300"
+          : "text-foreground";
+    const prefix = line.type === "add" ? "+" : line.type === "remove" ? "-" : " ";
+
+    elems.push(
+      <div
+        key={`l${i}`}
+        className={cn("flex", rowBg, (leftSel || rightSel) && "ring-1 ring-inset ring-blue-300/60 dark:ring-blue-600/40")}
+      >
+        {makeGutter(leftNum, "LEFT", line.type === "remove" ? "bg-red-100/60 dark:bg-red-900/40" : undefined)}
+        {makeGutter(rightNum, "RIGHT", line.type === "add" ? "bg-green-100/60 dark:bg-green-900/40" : undefined)}
+        <span className={cn("flex-1 whitespace-pre px-3 py-0 font-mono text-xs", textColor)}>
+          {prefix}{line.content}
+        </span>
+      </div>,
+    );
+
+    if (reviewProps) {
+      const oc = reviewProps.openComment;
+      const showForm =
+        oc &&
+        ((oc.side === "RIGHT" && rightNum === oc.line) ||
+          (oc.side === "LEFT" && leftNum === oc.line));
+
+      if (showForm) {
+        elems.push(
+          <div key={`f${i}`} className="border-b bg-blue-50/30 dark:bg-blue-950/10 px-3 py-2">
+            <InlineCommentForm
+              quotedText={oc?.quotedText}
+              onSubmit={reviewProps.onAddComment}
+              onCancel={reviewProps.onCloseComment}
+            />
+          </div>,
         );
-      })}
-    </div>
-  );
+      }
+
+      const pending = reviewProps.pendingComments.filter(
+        (c) =>
+          !c.isFileLevel &&
+          ((c.side === "RIGHT" && rightNum === c.line) ||
+            (c.side === "LEFT" && leftNum === c.line)),
+      );
+      if (pending.length > 0) {
+        elems.push(
+          <PendingCommentRow
+            key={`p${i}`}
+            comments={pending}
+            onUpdate={reviewProps.onUpdateComment}
+            onRemove={reviewProps.onRemoveComment}
+          />,
+        );
+      }
+    }
+  }
+
+  return <div className="w-max min-w-full">{elems}</div>;
 }
 
 function SplitDiff({ rows, reviewProps }: { rows: SplitRow[]; reviewProps?: FileReviewProps }) {
-  return (
-    <div className="min-w-full">
-      {rows.map((row, i) => {
-        if (row.type === "hunkHeader") {
-          return (
-            <div key={i} className="flex bg-muted">
-              <span className="flex-1 whitespace-pre px-3 py-0.5 font-mono text-xs text-muted-foreground">{row.header}</span>
-            </div>
-          );
+  const elems: React.ReactNode[] = [];
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+
+    if (row.type === "hunkHeader") {
+      elems.push(
+        <div key={`h${i}`} className="flex bg-muted">
+          <span className="flex-1 whitespace-pre px-3 py-0.5 font-mono text-xs text-muted-foreground">
+            {row.header}
+          </span>
+        </div>,
+      );
+      continue;
+    }
+
+    const sel = reviewProps?.lineSelection;
+    const selMin = sel ? Math.min(sel.anchorLine, sel.activeLine) : 0;
+    const selMax = sel ? Math.max(sel.anchorLine, sel.activeLine) : 0;
+    const leftSel =
+      !!reviewProps && sel?.side === "LEFT" && row.oldLine !== undefined && row.oldLine >= selMin && row.oldLine <= selMax;
+    const rightSel =
+      !!reviewProps && sel?.side === "RIGHT" && row.newLine !== undefined && row.newLine >= selMin && row.newLine <= selMax;
+
+    const isOldChange = row.type === "change" && row.oldContent !== undefined;
+    const isNewChange = row.type === "change" && row.newContent !== undefined;
+
+    const makeGutter = (num: number | undefined, side: "LEFT" | "RIGHT", isChange: boolean) => (
+      <span
+        className={cn(
+          NUM,
+          isChange && (side === "LEFT" ? "bg-red-100/60 dark:bg-red-900/40" : "bg-green-100/60 dark:bg-green-900/40"),
+          reviewProps && num !== undefined && "cursor-pointer hover:bg-blue-100/60 dark:hover:bg-blue-900/20",
+          (side === "LEFT" ? leftSel : rightSel) && "bg-blue-200/70 dark:bg-blue-800/50",
+        )}
+        data-line={num}
+        data-side={side}
+        onClick={
+          reviewProps && num !== undefined
+            ? (e) => reviewProps.onLineClick(num, side, e.shiftKey)
+            : undefined
         }
+      >
+        {num ?? ""}
+      </span>
+    );
 
-        const isOldChange = row.type === "change" && row.oldContent !== undefined;
-        const isNewChange = row.type === "change" && row.newContent !== undefined;
+    elems.push(
+      <div key={`l${i}`} className="flex min-w-0">
+        <div
+          className={cn(
+            "flex min-w-0 flex-1 overflow-x-auto",
+            isOldChange && "bg-red-50 dark:bg-red-950/40",
+            leftSel && "ring-1 ring-inset ring-blue-300/60 dark:ring-blue-600/40",
+          )}
+        >
+          {makeGutter(row.oldLine, "LEFT", isOldChange)}
+          <span
+            className={cn(
+              "flex-1 whitespace-pre px-3 py-0 font-mono text-xs",
+              isOldChange ? "text-red-800 dark:text-red-300" : "text-foreground",
+            )}
+          >
+            {row.oldContent ?? ""}
+          </span>
+        </div>
+        <div className="w-px shrink-0 bg-border" />
+        <div
+          className={cn(
+            "flex min-w-0 flex-1 overflow-x-auto",
+            isNewChange && "bg-green-50 dark:bg-green-950/40",
+            rightSel && "ring-1 ring-inset ring-blue-300/60 dark:ring-blue-600/40",
+          )}
+        >
+          {makeGutter(row.newLine, "RIGHT", isNewChange)}
+          <span
+            className={cn(
+              "flex-1 whitespace-pre px-3 py-0 font-mono text-xs",
+              isNewChange ? "text-green-800 dark:text-green-300" : "text-foreground",
+            )}
+          >
+            {row.newContent ?? ""}
+          </span>
+        </div>
+      </div>,
+    );
 
-        return (
-          <div key={i} className="flex min-w-0">
-            <div className={cn("flex min-w-0 flex-1 overflow-x-auto", isOldChange && "bg-red-50 dark:bg-red-950/40")}>
-              <span className={cn(NUM, isOldChange ? "bg-red-100/60 dark:bg-red-900/40" : "")}>{row.oldLine ?? ""}</span>
-              <span className={cn("flex-1 whitespace-pre px-3 py-0 font-mono text-xs", isOldChange ? "text-red-800 dark:text-red-300" : "text-foreground")}>
-                {row.oldContent ?? ""}
-              </span>
-            </div>
-            <div className="w-px shrink-0 bg-border" />
-            <div className={cn("flex min-w-0 flex-1 overflow-x-auto", isNewChange && "bg-green-50 dark:bg-green-950/40")}>
-              <span className={cn(NUM, isNewChange ? "bg-green-100/60 dark:bg-green-900/40" : "")}>{row.newLine ?? ""}</span>
-              <span className={cn("flex-1 whitespace-pre px-3 py-0 font-mono text-xs", isNewChange ? "text-green-800 dark:text-green-300" : "text-foreground")}>
-                {row.newContent ?? ""}
-              </span>
-            </div>
-          </div>
+    if (reviewProps) {
+      const oc = reviewProps.openComment;
+      const showForm =
+        oc &&
+        ((oc.side === "RIGHT" && row.newLine === oc.line) ||
+          (oc.side === "LEFT" && row.oldLine === oc.line));
+
+      if (showForm) {
+        elems.push(
+          <div key={`f${i}`} className="border-b bg-blue-50/30 dark:bg-blue-950/10 px-3 py-2">
+            <InlineCommentForm
+              quotedText={oc?.quotedText}
+              onSubmit={reviewProps.onAddComment}
+              onCancel={reviewProps.onCloseComment}
+            />
+          </div>,
         );
-      })}
-    </div>
-  );
+      }
+
+      const pending = reviewProps.pendingComments.filter(
+        (c) =>
+          !c.isFileLevel &&
+          ((c.side === "RIGHT" && row.newLine === c.line) ||
+            (c.side === "LEFT" && row.oldLine === c.line)),
+      );
+      if (pending.length > 0) {
+        elems.push(
+          <PendingCommentRow
+            key={`p${i}`}
+            comments={pending}
+            onUpdate={reviewProps.onUpdateComment}
+            onRemove={reviewProps.onRemoveComment}
+          />,
+        );
+      }
+    }
+  }
+
+  return <div className="min-w-full">{elems}</div>;
 }
 
 // ─── File Patch Card ──────────────────────────────────────────────────────────
