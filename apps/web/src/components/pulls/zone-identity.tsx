@@ -72,7 +72,6 @@ export function ZoneIdentity({ pr, loading, error }: ZoneIdentityProps) {
   const handleEdit = () => {
     setDraftBody(optimisticBody ?? pr?.body ?? "");
     setSaveError(null);
-    setBodyExpanded(true);
     setEditMode(true);
   };
 
@@ -118,33 +117,13 @@ export function ZoneIdentity({ pr, loading, error }: ZoneIdentityProps) {
           {pr.title}{" "}
           <span className="font-normal text-muted-foreground">#{pr.number}</span>
         </h1>
-        <div className="mt-0.5 flex shrink-0 items-center gap-2">
-          {editMode ? (
-            <button
-              onClick={handleSave}
-              className="text-xs text-foreground underline-offset-2 transition-colors hover:text-muted-foreground hover:underline"
-            >
-              Save
-            </button>
-          ) : (
-            <button
-              onClick={handleEdit}
-              disabled={saving}
-              className="text-xs text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline disabled:opacity-40"
-            >
-              {saving ? "Saving…" : "Edit"}
-            </button>
-          )}
-          {!editMode && displayBody && (
-            <button
-              onClick={() => setBodyExpanded((v) => !v)}
-              className="text-muted-foreground transition-colors hover:text-foreground"
-              aria-label={bodyExpanded ? "Collapse description" : "Expand description"}
-            >
-              <ChevronToggle open={bodyExpanded} className="size-4" />
-            </button>
-          )}
-        </div>
+        <button
+          onClick={() => setBodyExpanded((v) => !v)}
+          className="mt-0.5 shrink-0 text-muted-foreground transition-colors hover:text-foreground"
+          aria-label={bodyExpanded ? "Collapse description" : "Expand description"}
+        >
+          <ChevronToggle open={bodyExpanded} className="size-4" />
+        </button>
       </div>
 
       {/* Metadata */}
@@ -181,24 +160,42 @@ export function ZoneIdentity({ pr, loading, error }: ZoneIdentityProps) {
         </div>
       )}
 
-      {/* Body — editor or accordion */}
-      {editMode && (
+      {/* Body — accordion */}
+      {(bodyExpanded || editMode) && (
         <div className="mt-3 border-t pt-3 pl-8">
-          <textarea
-            value={draftBody}
-            onChange={(e) => setDraftBody(e.target.value)}
-            className="w-full resize-y rounded-md border bg-background px-3 py-2 font-mono text-sm leading-relaxed text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-            style={{ minHeight: "120px" }}
-            placeholder="Leave a description…"
-          />
-        </div>
-      )}
-
-      {!editMode && displayBody && bodyExpanded && (
-        <div className="mt-3 border-t pt-3 pl-8">
-          <div className={`prose prose-sm dark:prose-invert max-w-none text-sm${optimisticBody !== null ? " opacity-60" : ""}`}>
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayBody}</ReactMarkdown>
+          <div className="mb-2 flex justify-end">
+            {editMode ? (
+              <button
+                onClick={handleSave}
+                className="text-xs text-foreground underline-offset-2 transition-colors hover:text-muted-foreground hover:underline"
+              >
+                Save
+              </button>
+            ) : (
+              <button
+                onClick={handleEdit}
+                disabled={saving}
+                className="text-xs text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline disabled:opacity-40"
+              >
+                {saving ? "Saving…" : "Edit"}
+              </button>
+            )}
           </div>
+          {editMode ? (
+            <textarea
+              value={draftBody}
+              onChange={(e) => setDraftBody(e.target.value)}
+              className="w-full resize-y rounded-md border bg-background px-3 py-2 font-mono text-sm leading-relaxed text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+              style={{ minHeight: "120px" }}
+              placeholder="Leave a description…"
+            />
+          ) : displayBody ? (
+            <div className={`prose prose-sm dark:prose-invert max-w-none text-sm${optimisticBody !== null ? " opacity-60" : ""}`}>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayBody}</ReactMarkdown>
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">No description.</p>
+          )}
         </div>
       )}
 
