@@ -62,8 +62,8 @@ export function PrRow({
     <div className="rounded-lg border bg-card p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="truncate text-sm font-medium">
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="min-w-0 truncate text-sm font-medium">
               #{pr.number} {pr.title}
             </span>
             {risks.length > 0 && (
@@ -88,7 +88,9 @@ export function PrRow({
               {pr.changedFiles} file{pr.changedFiles !== 1 ? "s" : ""}
             </span>
             <span className={`flex items-center gap-1 ${rollup.cls}`}>
-              <RollupIcon className="size-3.5" />
+              <RollupIcon
+                className={`size-3.5 ${pr.checkRollup === "running" ? "animate-spin" : ""}`}
+              />
               {rollup.label}
             </span>
             {viewerReview && (
