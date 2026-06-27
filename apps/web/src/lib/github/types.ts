@@ -131,3 +131,62 @@ export interface TagsAndReleasesItem {
     assets: ReleaseAsset[];
   } | null;
 }
+
+export interface IssueLabel {
+  name: string;
+  color: string;
+}
+
+export interface IssueUser {
+  login: string;
+  avatarUrl: string;
+}
+
+export interface IssueMilestone {
+  title: string;
+  number: number;
+}
+
+export type IssueState = "open" | "closed";
+
+export interface Issue {
+  number: number;
+  title: string;
+  state: IssueState;
+  body: string | null;
+  labels: IssueLabel[];
+  assignees: IssueUser[];
+  milestone: IssueMilestone | null;
+  user: IssueUser;
+  createdAt: string;
+  updatedAt: string;
+  commentCount: number;
+}
+
+export interface IssueComment {
+  id: number;
+  user: IssueUser;
+  body: string;
+  createdAt: string;
+}
+
+export interface IssueFilters {
+  labels: string[];
+  assignee: string | null;
+  milestone: string | null;
+  author: string | null;
+}
+
+export type IssueTimelineEvent =
+  | { kind: "comment"; id: number; user: IssueUser; body: string; createdAt: string }
+  | { kind: "cross-referenced"; actor: IssueUser; createdAt: string; source: { isPR: boolean; number: number; title: string; state: "open" | "closed" } }
+  | { kind: "referenced"; actor: IssueUser; commitId: string; createdAt: string }
+  | { kind: "closed"; actor: IssueUser; createdAt: string; commitId: string | null }
+  | { kind: "reopened"; actor: IssueUser; createdAt: string }
+  | { kind: "renamed"; actor: IssueUser; createdAt: string; from: string; to: string }
+  | { kind: "labeled"; actor: IssueUser; createdAt: string; label: IssueLabel }
+  | { kind: "unlabeled"; actor: IssueUser; createdAt: string; label: IssueLabel }
+  | { kind: "assigned"; actor: IssueUser; createdAt: string; assignee: IssueUser }
+  | { kind: "unassigned"; actor: IssueUser; createdAt: string; assignee: IssueUser }
+  | { kind: "milestoned"; actor: IssueUser; createdAt: string; milestone: string }
+  | { kind: "demilestoned"; actor: IssueUser; createdAt: string; milestone: string };
