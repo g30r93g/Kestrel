@@ -21,7 +21,7 @@ interface ReviewDraftContextValue {
   clearDraft: () => void;
 }
 
-const ReviewDraftContext = createContext<ReviewDraftContextValue | null>(null);
+export const ReviewDraftContext = createContext<ReviewDraftContextValue | null>(null);
 
 const EMPTY: ReviewDraft = { commitSha: "", comments: [], markedFiles: [], body: "" };
 

@@ -1,13 +1,16 @@
 "use client";
 
-import { fetchPullRequestPatches, type PatchFile } from "@/lib/github/pulls";
+import { fetchPullRequest, fetchPullRequestPatches, type PatchFile } from "@/lib/github/pulls";
+import { ReviewDraftProvider, ReviewDraftContext } from "@/components/pulls/review-draft-context";
+import type { PendingReviewComment } from "@/lib/github/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronToggle } from "@/components/ui/chevron-toggle";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { ArrowLeft, ChevronRight, File, Folder, FolderOpen } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useState } from "react";
+import { useCallback, useContext, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import useSWR from "swr";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -36,6 +39,27 @@ interface DiffNode {
   type: "dir" | "file";
   children: DiffNode[];
   file?: PatchFile;
+}
+
+interface FileReviewProps {
+  openComment: {
+    line: number;
+    startLine?: number;
+    side: "LEFT" | "RIGHT";
+    startSide?: "LEFT" | "RIGHT";
+    quotedText?: string;
+  } | null;
+  lineSelection: {
+    anchorLine: number;
+    activeLine: number;
+    side: "LEFT" | "RIGHT";
+  } | null;
+  pendingComments: PendingReviewComment[];
+  onLineClick: (line: number, side: "LEFT" | "RIGHT", shiftKey: boolean) => void;
+  onCloseComment: () => void;
+  onAddComment: (body: string) => void;
+  onUpdateComment: (id: string, body: string) => void;
+  onRemoveComment: (id: string) => void;
 }
 
 // ─── Patch Parsing ────────────────────────────────────────────────────────────
@@ -197,7 +221,7 @@ function DiffFileTree({ files }: { files: PatchFile[] }) {
 
 const NUM = "w-10 shrink-0 select-none border-r px-1.5 text-right font-mono text-xs text-muted-foreground/50";
 
-function UnifiedDiff({ lines }: { lines: ParsedLine[] }) {
+function UnifiedDiff({ lines, reviewProps }: { lines: ParsedLine[]; reviewProps?: FileReviewProps }) {
   return (
     <div className="w-max min-w-full">
       {lines.map((line, i) => {
@@ -240,7 +264,7 @@ function UnifiedDiff({ lines }: { lines: ParsedLine[] }) {
   );
 }
 
-function SplitDiff({ rows }: { rows: SplitRow[] }) {
+function SplitDiff({ rows, reviewProps }: { rows: SplitRow[]; reviewProps?: FileReviewProps }) {
   return (
     <div className="min-w-full">
       {rows.map((row, i) => {
@@ -279,7 +303,17 @@ function SplitDiff({ rows }: { rows: SplitRow[] }) {
 
 // ─── File Patch Card ──────────────────────────────────────────────────────────
 
-function FilePatch({ file, mode }: { file: PatchFile; mode: DiffMode }) {
+function FilePatch({
+  file,
+  mode,
+  reviewMode = false,
+  fileReviewProps,
+}: {
+  file: PatchFile;
+  mode: DiffMode;
+  reviewMode?: boolean;
+  fileReviewProps?: FileReviewProps;
+}) {
   const [open, setOpen] = useState(true);
   const lines = file.patch ? parsePatch(file.patch) : [];
   const splitRows = mode === "split" ? toSplitRows(lines) : [];
@@ -303,9 +337,9 @@ function FilePatch({ file, mode }: { file: PatchFile; mode: DiffMode }) {
           {file.patch === null ? (
             <p className="px-4 py-3 text-xs text-muted-foreground">Binary file — no diff available.</p>
           ) : mode === "unified" ? (
-            <UnifiedDiff lines={lines} />
+            <UnifiedDiff lines={lines} reviewProps={fileReviewProps} />
           ) : (
-            <SplitDiff rows={splitRows} />
+            <SplitDiff rows={splitRows} reviewProps={fileReviewProps} />
           )}
         </div>
       )}
@@ -313,19 +347,81 @@ function FilePatch({ file, mode }: { file: PatchFile; mode: DiffMode }) {
   );
 }
 
-// ─── Top-level View ───────────────────────────────────────────────────────────
+// ─── Inner View (rendered inside ReviewDraftProvider) ────────────────────────
 
-interface DiffViewProps {
+interface DiffViewInnerProps {
   owner: string;
   repo: string;
   prNumber: number;
+  mode: DiffMode;
+  setMode: (m: DiffMode) => void;
+  files: PatchFile[];
+  isLoading: boolean;
+  reviewMode: boolean;
+  commitSha: string;
 }
 
-export function DiffView({ owner, repo, prNumber }: DiffViewProps) {
-  const [mode, setMode] = useState<DiffMode>("unified");
-  const { data: files = [], isLoading } = useSWR(
-    [owner, repo, prNumber, "patches"],
-    ([o, r, n]) => fetchPullRequestPatches(o, r, n),
+function DiffViewInner({
+  owner,
+  repo,
+  prNumber,
+  mode,
+  setMode,
+  files,
+  isLoading,
+  reviewMode,
+  commitSha,
+}: DiffViewInnerProps) {
+  // Always call useContext — never conditional. When ReviewDraftProvider is
+  // disabled (enabled=false) it renders children without providing a value,
+  // so ctx will be null. We guard all draft actions behind the null check.
+  const ctx = useContext(ReviewDraftContext);
+  const draft = ctx?.draft ?? { commitSha: "", comments: [], markedFiles: [], body: "" };
+  const addComment = ctx?.addComment ?? (() => {});
+  const updateComment = ctx?.updateComment ?? (() => {});
+  const removeComment = ctx?.removeComment ?? (() => {});
+
+  const [openComment, setOpenComment] = useState<{
+    path: string;
+    line: number;
+    startLine?: number;
+    side: "LEFT" | "RIGHT";
+    startSide?: "LEFT" | "RIGHT";
+    quotedText?: string;
+  } | null>(null);
+
+  const [lineSelection, setLineSelection] = useState<{
+    path: string;
+    anchorLine: number;
+    activeLine: number;
+    side: "LEFT" | "RIGHT";
+  } | null>(null);
+
+  const handleLineClick = useCallback(
+    (path: string, line: number, side: "LEFT" | "RIGHT", shiftKey: boolean) => {
+      if (
+        shiftKey &&
+        lineSelection &&
+        lineSelection.path === path &&
+        lineSelection.side === side
+      ) {
+        const next = { ...lineSelection, activeLine: line };
+        setLineSelection(next);
+        const minLine = Math.min(next.anchorLine, next.activeLine);
+        const maxLine = Math.max(next.anchorLine, next.activeLine);
+        setOpenComment({
+          path,
+          line: maxLine,
+          startLine: minLine < maxLine ? minLine : undefined,
+          side,
+          startSide: minLine < maxLine ? side : undefined,
+        });
+      } else {
+        setLineSelection({ path, anchorLine: line, activeLine: line, side });
+        setOpenComment({ path, line, side });
+      }
+    },
+    [lineSelection],
   );
 
   return (
@@ -375,11 +471,114 @@ export function DiffView({ owner, repo, prNumber }: DiffViewProps) {
           {!isLoading && files.length === 0 && (
             <p className="text-sm text-muted-foreground">No file changes in this PR.</p>
           )}
-          {!isLoading && files.map((f) => (
-            <FilePatch key={f.filename} file={f} mode={mode} />
-          ))}
+          {!isLoading &&
+            files.map((f) => (
+              <FilePatch
+                key={f.filename}
+                file={f}
+                mode={mode}
+                reviewMode={reviewMode}
+                fileReviewProps={
+                  reviewMode
+                    ? {
+                        openComment:
+                          openComment?.path === f.filename
+                            ? {
+                                line: openComment.line,
+                                startLine: openComment.startLine,
+                                side: openComment.side,
+                                startSide: openComment.startSide,
+                                quotedText: openComment.quotedText,
+                              }
+                            : null,
+                        lineSelection:
+                          lineSelection?.path === f.filename
+                            ? {
+                                anchorLine: lineSelection.anchorLine,
+                                activeLine: lineSelection.activeLine,
+                                side: lineSelection.side,
+                              }
+                            : null,
+                        pendingComments: draft.comments.filter(
+                          (c) => c.path === f.filename,
+                        ),
+                        onLineClick: (line, side, shiftKey) =>
+                          handleLineClick(f.filename, line, side, shiftKey),
+                        onCloseComment: () => {
+                          setOpenComment(null);
+                          setLineSelection(null);
+                        },
+                        onAddComment: (body) => {
+                          if (!openComment) return;
+                          addComment({
+                            path: openComment.path,
+                            body,
+                            line: openComment.line,
+                            startLine: openComment.startLine,
+                            side: openComment.side,
+                            startSide: openComment.startSide,
+                            quotedText: openComment.quotedText,
+                          });
+                          setOpenComment(null);
+                          setLineSelection(null);
+                        },
+                        onUpdateComment: updateComment,
+                        onRemoveComment: removeComment,
+                      }
+                    : undefined
+                }
+              />
+            ))}
         </div>
       </div>
     </div>
+  );
+}
+
+// ─── Top-level View ───────────────────────────────────────────────────────────
+
+interface DiffViewProps {
+  owner: string;
+  repo: string;
+  prNumber: number;
+}
+
+export function DiffView({ owner, repo, prNumber }: DiffViewProps) {
+  const [mode, setMode] = useState<DiffMode>("unified");
+  const searchParams = useSearchParams();
+  const reviewMode = searchParams.get("review") === "true";
+
+  const { data: files = [], isLoading } = useSWR(
+    [owner, repo, prNumber, "patches"],
+    ([o, r, n]) => fetchPullRequestPatches(o, r, n),
+  );
+
+  const { data: pr } = useSWR(
+    reviewMode ? [owner, repo, prNumber, "pr"] : null,
+    ([o, r, n]) => fetchPullRequest(o, r, n),
+  );
+
+  const commitSha = pr?.headSha ?? "";
+
+  return (
+    <ReviewDraftProvider
+      owner={owner}
+      repo={repo}
+      prNumber={prNumber}
+      commitSha={commitSha}
+      enabled={reviewMode}
+    >
+      <DiffViewInner
+        owner={owner}
+        repo={repo}
+        prNumber={prNumber}
+        mode={mode}
+        setMode={setMode}
+        files={files}
+        isLoading={isLoading}
+        reviewMode={reviewMode}
+        commitSha={commitSha}
+      />
+    </ReviewDraftProvider>
   );
 }
