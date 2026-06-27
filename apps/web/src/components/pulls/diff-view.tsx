@@ -327,7 +327,7 @@ export function DiffView({ owner, repo, prNumber }: DiffViewProps) {
   );
 
   return (
-    <div className="flex flex-1 overflow-hidden">
+    <div className="flex min-w-0 flex-1 overflow-hidden">
       {/* File tree sidebar */}
       <aside className="hidden w-52 shrink-0 overflow-y-auto border-r md:block">
         {isLoading ? (
@@ -340,7 +340,7 @@ export function DiffView({ owner, repo, prNumber }: DiffViewProps) {
       </aside>
 
       {/* Main diff area */}
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         {/* Toolbar */}
         <div className="flex items-center justify-between border-b px-4 py-2">
           <Link

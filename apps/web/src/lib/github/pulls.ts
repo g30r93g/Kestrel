@@ -386,13 +386,15 @@ export async function fetchPullRequestPatches(
       pull_number: pullNumber,
       per_page: 100,
     });
-    return data.map((f) => ({
-      filename: f.filename,
-      status: f.status as PRFile["status"],
-      additions: f.additions,
-      deletions: f.deletions,
-      patch: (f as { patch?: string }).patch ?? null,
-    }));
+    return data
+      .filter((f) => f.status !== "unchanged")
+      .map((f) => ({
+        filename: f.filename,
+        status: f.status as PRFile["status"],
+        additions: f.additions,
+        deletions: f.deletions,
+        patch: (f as { patch?: string }).patch ?? null,
+      }));
   } catch {
     return [];
   }
