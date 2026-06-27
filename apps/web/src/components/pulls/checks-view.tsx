@@ -1,8 +1,10 @@
 "use client";
 
 import { Badge } from "@/components/reui/badge";
+import { Frame, FrameHeader, FramePanel } from "@/components/reui/frame";
 import {
   Timeline,
+  TimelineContent,
   TimelineHeader,
   TimelineIndicator,
   TimelineItem,
@@ -10,10 +12,16 @@ import {
   TimelineTitle,
 } from "@/components/reui/timeline";
 import { Button } from "@/components/ui/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import {
   fetchCheckRunDetails,
+  fetchJobLogs,
   fetchPullRequest,
   fetchPullRequestChecks,
 } from "@/lib/github/pulls";
@@ -23,6 +31,7 @@ import {
   ArrowLeft,
   CheckIcon,
   ChevronRight,
+  ChevronRightIcon,
   CircleIcon,
   ExternalLink,
   MinusIcon,
@@ -311,7 +320,15 @@ function WorkflowView({
 
 // ─── Job View ─────────────────────────────────────────────────────────────────
 
-function JobView({ detail }: { detail: CheckRunDetail }) {
+function JobView({
+  detail,
+  logs,
+  logsLoading,
+}: {
+  detail: CheckRunDetail;
+  logs: Record<string, string>;
+  logsLoading: boolean;
+}) {
   const duration = formatDuration(detail.startedAt, detail.completedAt);
 
   if (detail.steps.length > 0) {
@@ -330,18 +347,51 @@ function JobView({ detail }: { detail: CheckRunDetail }) {
           {detail.steps.map((step) => {
             const status = stepTimelineStatus(step);
             const stepDuration = formatDuration(step.startedAt, step.completedAt);
+            const stepLog = logs[step.name];
+            const defaultOpen = status === "active" || status === "failed";
             return (
-              <TimelineItem key={step.number} step={step.number}>
-                <TimelineHeader className="flex items-center gap-2">
-                  <TimelineSeparator className="bg-border!" />
-                  <TimelineTitle className={cn(status === "skipped" && "opacity-50")}>
-                    {step.name}
-                  </TimelineTitle>
-                  <StepBadge status={status} duration={stepDuration} />
-                  <TimelineIndicator className={cn("flex items-center justify-center border!", stepIndicatorVariants[status])}>
+              <TimelineItem key={step.number} step={step.number} className="ms-10 pb-8">
+                <TimelineHeader>
+                  <TimelineSeparator className="bg-muted! group-data-[orientation=vertical]/timeline:-left-7 group-data-[orientation=vertical]/timeline:h-[calc(100%-1.5rem-0.25rem)] group-data-[orientation=vertical]/timeline:translate-y-7" />
+                  <div className="flex items-center gap-2">
+                    <TimelineTitle className={cn(status === "skipped" && "opacity-50")}>
+                      {step.name}
+                    </TimelineTitle>
+                    <StepBadge status={status} duration={stepDuration} />
+                  </div>
+                  <TimelineIndicator className={cn("flex size-6 items-center justify-center border-none group-data-[orientation=vertical]/timeline:-left-7", stepIndicatorVariants[status])}>
                     <StepIndicatorIcon status={status} />
                   </TimelineIndicator>
                 </TimelineHeader>
+                {detail.actionsJobId !== null && (
+                  <TimelineContent className="mt-2">
+                    <Frame className="overflow-hidden gap-0 p-0">
+                      <Collapsible defaultOpen={defaultOpen} className="group/collapsible">
+                        <CollapsibleTrigger className="flex w-full">
+                          <FrameHeader className="flex grow flex-row items-center justify-between gap-2 px-3 py-2">
+                            <span className="text-xs text-muted-foreground">Logs</span>
+                            <ChevronRightIcon className="size-3.5 text-muted-foreground transition-transform duration-200 group-data-open/collapsible:rotate-90" />
+                          </FrameHeader>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <FramePanel className="rounded-none border-x-0 border-b-0 shadow-none p-0">
+                            {logsLoading ? (
+                              <div className="space-y-1.5 p-3">
+                                {[1, 2, 3].map((i) => <Skeleton key={i} className="h-3 w-full" />)}
+                              </div>
+                            ) : stepLog ? (
+                              <pre className="overflow-x-auto p-3 font-mono text-xs leading-relaxed text-foreground/80 whitespace-pre-wrap">
+                                {stepLog}
+                              </pre>
+                            ) : (
+                              <p className="p-3 text-xs text-muted-foreground">No logs for this step.</p>
+                            )}
+                          </FramePanel>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    </Frame>
+                  </TimelineContent>
+                )}
               </TimelineItem>
             );
           })}
@@ -428,6 +478,11 @@ export function ChecksView({ owner, repo, prNumber }: ChecksViewProps) {
   const { data: detail, isLoading: detailLoading } = useSWR(
     selectedCheckId !== null ? [owner, repo, selectedCheckId, "check-detail"] : null,
     ([o, r, id]) => fetchCheckRunDetails(o, r, id),
+  );
+
+  const { data: jobLogs = {}, isLoading: logsLoading } = useSWR(
+    detail?.actionsJobId ? [owner, repo, detail.actionsJobId, "job-logs"] : null,
+    ([o, r, id]) => fetchJobLogs(o, r, id),
   );
 
   const selectedCheck =
@@ -538,7 +593,7 @@ export function ChecksView({ owner, repo, prNumber }: ChecksViewProps) {
                   ))}
                 </div>
               )}
-              {!detailLoading && detail && <JobView detail={detail} />}
+              {!detailLoading && detail && <JobView detail={detail} logs={jobLogs} logsLoading={logsLoading} />}
               {!detailLoading && !detail && (
                 <p className="text-sm text-muted-foreground">
                   Failed to load check details.

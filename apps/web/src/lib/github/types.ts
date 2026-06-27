@@ -303,6 +303,7 @@ export interface CheckRunDetail {
     text: string | null;
   };
   steps: CheckStep[];
+  actionsJobId: number | null;
 }
 
 export interface PRComment {

@@ -544,9 +544,68 @@ export async function fetchCheckRunDetails(
         text: cr.output.text ?? null,
       },
       steps,
+      actionsJobId: jobId,
     };
   } catch {
     return null;
+  }
+}
+
+function parseJobLogs(text: string): Record<string, string> {
+  const clean = text.replace(/\x1B\[[0-9;]*m/g, "");
+  const lines = clean.split("\n");
+  const result: Record<string, string> = {};
+  let currentName: string | null = null;
+  let currentLines: string[] = [];
+  let depth = 0;
+
+  const flush = () => {
+    if (currentName !== null && currentLines.length > 0) {
+      result[currentName] = currentLines.join("\n").trim();
+    }
+  };
+
+  for (const line of lines) {
+    const content = line.replace(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z /, "");
+    if (content.startsWith("##[group]")) {
+      if (depth === 0) {
+        flush();
+        currentName = content.slice("##[group]".length).trim();
+        currentLines = [];
+      } else {
+        currentLines.push(line);
+      }
+      depth++;
+    } else if (content.startsWith("##[endgroup]")) {
+      depth = Math.max(0, depth - 1);
+      if (depth > 0) currentLines.push(line);
+    } else if (depth > 0) {
+      currentLines.push(line);
+    }
+  }
+  flush();
+
+  return result;
+}
+
+export async function fetchJobLogs(
+  owner: string,
+  repo: string,
+  jobId: number,
+): Promise<Record<string, string>> {
+  const octokit = await getOctokit();
+  try {
+    const response = await octokit.request(
+      "GET /repos/{owner}/{repo}/actions/jobs/{job_id}/logs",
+      { owner, repo, job_id: jobId },
+    );
+    const text =
+      typeof response.data === "string"
+        ? response.data
+        : new TextDecoder().decode(response.data as ArrayBuffer);
+    return parseJobLogs(text);
+  } catch {
+    return {};
   }
 }
 
