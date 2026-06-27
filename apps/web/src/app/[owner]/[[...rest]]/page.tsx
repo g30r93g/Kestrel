@@ -2,6 +2,7 @@ import { resolveNav } from "@/lib/nav-tree";
 import { getOctokit } from "@/lib/github/client";
 import { BranchesView } from "@/components/branches/branches-view";
 import { CodeView } from "@/components/code/code-view";
+import { TagsView } from "@/components/tags/tags-view";
 import type { BranchFilter } from "@/lib/github/types";
 
 export default async function DashboardPage({
@@ -35,6 +36,16 @@ export default async function DashboardPage({
           filter={filter}
           currentUserLogin={ghUser.login}
         />
+      </div>
+    );
+  }
+
+  // Tags: /{owner}/{repo}/tags
+  if (segments.length >= 2 && segments[1] === "tags") {
+    const repo = segments[0];
+    return (
+      <div className="flex-1 overflow-auto p-4 md:p-6">
+        <TagsView owner={owner} repo={repo} />
       </div>
     );
   }
