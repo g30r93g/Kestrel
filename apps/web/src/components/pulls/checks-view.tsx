@@ -8,15 +8,32 @@ import {
 import type { CheckRunDetail, CheckStep, PRCheckRun } from "@/lib/github/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/reui/badge";
+import { Frame, FrameHeader, FramePanel } from "@/components/reui/frame";
+import {
+  Timeline,
+  TimelineContent,
+  TimelineHeader,
+  TimelineIndicator,
+  TimelineItem,
+  TimelineSeparator,
+  TimelineTitle,
+} from "@/components/reui/timeline";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { Spinner } from "@/components/ui/spinner";
 import {
   ArrowLeft,
-  CheckCircle2,
+  CheckIcon,
   ChevronRight,
-  CircleDot,
+  ChevronRightIcon,
+  CircleIcon,
   ExternalLink,
-  Loader2,
-  MinusCircle,
-  XCircle,
+  MinusIcon,
+  XIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -139,16 +156,34 @@ function WorkflowStatusIcon({ group }: { group: WorkflowGroup }) {
   return <CircleDot className="size-4 shrink-0 text-muted-foreground" />;
 }
 
-function StepIcon({ step }: { step: CheckStep }) {
-  if (step.status !== "completed")
-    return <Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" />;
-  if (step.conclusion === "success")
-    return <CheckCircle2 className="size-4 shrink-0 text-green-500" />;
-  if (step.conclusion === "failure" || step.conclusion === "timed_out")
-    return <XCircle className="size-4 shrink-0 text-destructive" />;
-  if (step.conclusion === "skipped" || step.conclusion === "cancelled")
-    return <MinusCircle className="size-4 shrink-0 text-muted-foreground/60" />;
-  return <CircleDot className="size-4 shrink-0 text-muted-foreground" />;
+function stepTimelineStatus(step: CheckStep): "completed" | "active" | "pending" | "skipped" | "failed" {
+  if (step.status !== "completed") return "active";
+  if (step.conclusion === "success" || step.conclusion === "neutral") return "completed";
+  if (step.conclusion === "skipped" || step.conclusion === "cancelled") return "skipped";
+  if (step.conclusion === "failure" || step.conclusion === "timed_out" || step.conclusion === "action_required") return "failed";
+  return "pending";
+}
+
+function StepIndicatorIcon({ status }: { status: ReturnType<typeof stepTimelineStatus> }) {
+  if (status === "completed") return <CheckIcon className="size-3.5" />;
+  if (status === "active") return <Spinner className="size-3.5" />;
+  if (status === "failed") return <XIcon className="size-3.5" />;
+  if (status === "skipped") return <MinusIcon className="size-3.5" />;
+  return <CircleIcon className="size-3.5" />;
+}
+
+function StepBadge({ status, duration }: { status: ReturnType<typeof stepTimelineStatus>; duration: string | null }) {
+  if (!duration && status === "pending") return null;
+  const variant =
+    status === "completed" ? "success-light" :
+    status === "active" ? "info-light" :
+    status === "failed" ? "destructive-light" :
+    "warning-light";
+  return (
+    <Badge variant={variant} size="sm">
+      {status === "active" ? "Running" : status === "pending" ? "Pending" : (duration ?? status)}
+    </Badge>
+  );
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
