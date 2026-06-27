@@ -8,9 +8,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronToggle } from "@/components/ui/chevron-toggle";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { ArrowLeft, ChevronRight, File, Folder, FolderOpen } from "lucide-react";
+import { ArrowLeft, ChevronRight, File, Folder, FolderOpen, MessageSquarePlus } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useContext, useState } from "react";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import useSWR from "swr";
 
@@ -565,6 +565,19 @@ function DiffViewInner({
     side: "LEFT" | "RIGHT";
   } | null>(null);
 
+  const [textTooltip, setTextTooltip] = useState<{
+    path: string;
+    line: number;
+    startLine?: number;
+    side: "LEFT" | "RIGHT";
+    startSide?: "LEFT" | "RIGHT";
+    quotedText: string;
+    x: number;
+    y: number;
+  } | null>(null);
+
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
   const handleLineClick = useCallback(
     (path: string, line: number, side: "LEFT" | "RIGHT", shiftKey: boolean) => {
       if (
@@ -592,8 +605,71 @@ function DiffViewInner({
     [lineSelection],
   );
 
+  useEffect(() => {
+    if (!reviewMode) return;
+
+    const handleMouseUp = () => {
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed || !sel.toString().trim()) {
+        setTextTooltip(null);
+        return;
+      }
+
+      const range = sel.getRangeAt(0);
+      const startNode = range.startContainer.parentElement;
+      const endNode = range.endContainer.parentElement;
+
+      const findLineData = (el: Element | null) => {
+        while (el) {
+          const line = el.getAttribute("data-line");
+          const path = el.getAttribute("data-path");
+          const side = el.getAttribute("data-side") as "LEFT" | "RIGHT" | null;
+          if (line && path && side) return { line: parseInt(line, 10), path, side };
+          const row = el.closest("[data-line]");
+          if (row) {
+            const rowLine = row.getAttribute("data-line");
+            const rowPath = row.getAttribute("data-path");
+            const rowSide = row.getAttribute("data-side") as "LEFT" | "RIGHT" | null;
+            if (rowLine && rowPath && rowSide)
+              return { line: parseInt(rowLine, 10), path: rowPath, side: rowSide };
+          }
+          el = el.parentElement;
+        }
+        return null;
+      };
+
+      const startData = findLineData(startNode);
+      const endData = findLineData(endNode);
+
+      if (!startData || !endData || startData.path !== endData.path) {
+        setTextTooltip(null);
+        return;
+      }
+
+      const rect = range.getBoundingClientRect();
+      setTextTooltip({
+        path: endData.path,
+        line: endData.line,
+        startLine: startData.line !== endData.line ? startData.line : undefined,
+        side: endData.side,
+        startSide: startData.side !== endData.side ? startData.side : undefined,
+        quotedText: sel.toString().trim().slice(0, 500),
+        x: rect.left + rect.width / 2 - 40,
+        y: rect.bottom + 6,
+      });
+    };
+
+    document.addEventListener("mouseup", handleMouseUp);
+    return () => document.removeEventListener("mouseup", handleMouseUp);
+  }, [reviewMode]);
+
+  useEffect(() => {
+    if (openComment) setTextTooltip(null);
+  }, [openComment]);
+
   return (
-    <div className="flex min-w-0 flex-1 overflow-hidden">
+    <>
+    <div ref={scrollContainerRef} className="flex min-w-0 flex-1 overflow-hidden">
       {/* File tree sidebar */}
       <aside className="hidden w-52 shrink-0 overflow-y-auto border-r md:block">
         {isLoading ? (
@@ -700,6 +776,36 @@ function DiffViewInner({
         </div>
       </div>
     </div>
+    {reviewMode && textTooltip && (
+      <button
+        style={{ position: "fixed", left: textTooltip.x, top: textTooltip.y, zIndex: 50 }}
+        className="flex items-center gap-1 rounded-md bg-foreground px-2.5 py-1 text-xs text-background shadow-lg hover:opacity-80 transition-opacity"
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => {
+          const tt = textTooltip;
+          setTextTooltip(null);
+          setLineSelection({
+            path: tt.path,
+            anchorLine: tt.startLine ?? tt.line,
+            activeLine: tt.line,
+            side: tt.side,
+          });
+          setOpenComment({
+            path: tt.path,
+            line: tt.line,
+            startLine: tt.startLine,
+            side: tt.side,
+            startSide: tt.startSide,
+            quotedText: tt.quotedText,
+          });
+          window.getSelection()?.removeAllRanges();
+        }}
+      >
+        <MessageSquarePlus className="size-3" />
+        Comment
+      </button>
+    )}
+    </>
   );
 }
 
