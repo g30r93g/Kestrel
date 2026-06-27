@@ -42,7 +42,11 @@
 
 ---
 
-### Task 1: Types
+### Task 1: Types ✅ COMPLETE
+
+> Already implemented in commit 2a8a443. `PRCollaborator`, `PendingReviewComment`, and `ReviewDraft` are present at the end of `types.ts`. Skip to Task 2.
+
+
 
 **Files:**
 - Modify: `apps/web/src/lib/github/types.ts`
