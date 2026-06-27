@@ -5,6 +5,7 @@ import { CodeView } from "@/components/code/code-view";
 import { IssuesView } from "@/components/issues/issues-view";
 import { PackagesView } from "@/components/packages/packages-view";
 import { TagsAndReleasesView } from "@/components/tags-and-releases/tags-and-releases-view";
+import { PullsView } from "@/components/pulls/pulls-view";
 import type { BranchFilter } from "@/lib/github/types";
 
 export default async function DashboardPage({
@@ -46,6 +47,26 @@ export default async function DashboardPage({
   if (segments.length >= 2 && segments[1] === "issues") {
     const repo = segments[0];
     return <IssuesView key={`${owner}/${repo}`} owner={owner} repo={repo} />;
+  }
+
+  // Pull requests: /{owner}/{repo}/pulls[/{number}]
+  if (segments.length >= 2 && segments[1] === "pulls") {
+    const repo = segments[0];
+    const prNumberStr = segments[2];
+
+    // /pulls/new is the creation route (Plan 3 — not yet implemented)
+    if (prNumberStr === "new") {
+      return (
+        <div className="p-4 md:p-6">
+          <div className="rounded-lg border border-dashed p-8 text-sm text-muted-foreground">
+            PR creation coming soon.
+          </div>
+        </div>
+      );
+    }
+
+    const prNumber = prNumberStr ? parseInt(prNumberStr, 10) : undefined;
+    return <PullsView owner={owner} repo={repo} prNumber={prNumber} />;
   }
 
   // Branches: /{owner}/{repo}/branches[/{filter}]
