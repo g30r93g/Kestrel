@@ -30,7 +30,8 @@ import {
   usePathname,
   useRouter,
 } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import useSWR from "swr";
 
 // Owner-level slugs that are never repo names — mirrors ref-selector.tsx.
 const RESERVED = new Set([
@@ -67,18 +68,11 @@ export function PRSwitcher() {
 
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState<PRFilter>("open");
-  const [prs, setPRs] = useState<PullRequestSummary[]>([]);
 
-  useEffect(() => {
-    if (!owner || !repo) return;
-    let cancelled = false;
-    fetchPullRequests(owner, repo).then((data) => {
-      if (!cancelled) setPRs(data);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [owner, repo]);
+  const { data: prs = [] } = useSWR(
+    owner && repo ? [owner, repo, "prs"] : null,
+    ([o, r]: [string, string]) => fetchPullRequests(o, r),
+  );
 
   if (!repo) return null;
 

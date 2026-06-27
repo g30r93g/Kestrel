@@ -74,7 +74,7 @@ export function ZoneChecks({ checks, loading, error }: ZoneChecksProps) {
           <li key={c.id} className="flex items-center gap-2 text-sm">
             <CheckIcon run={c} />
             <span className="flex-1 truncate">{c.name}</span>
-            {c.conclusion === "failure" && c.detailsUrl && (
+            {(c.conclusion === "failure" || c.conclusion === "timed_out" || c.conclusion === "action_required") && c.detailsUrl && (
               <a
                 href={c.detailsUrl}
                 target="_blank"

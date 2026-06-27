@@ -203,9 +203,11 @@ export async function fetchPullRequestChecks(
         .catch(() => null),
     ]);
 
-    const requiredNames = new Set<string>(
-      branchProtection?.required_status_checks?.contexts ?? [],
+    const contextNames = branchProtection?.required_status_checks?.contexts ?? [];
+    const checkNames = ((branchProtection?.required_status_checks as { checks?: { context: string; app_id: number | null }[] } | null | undefined)?.checks ?? []).map(
+      (c: { context: string; app_id: number | null }) => c.context,
     );
+    const requiredNames = new Set<string>([...contextNames, ...checkNames]);
 
     return checksData.check_runs.map((c) => ({
       id: c.id,

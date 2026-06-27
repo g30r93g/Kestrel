@@ -1,7 +1,7 @@
 "use server";
 
 import { getOctokit } from "./client";
-import type { Issue, IssueComment, IssueTimelineEvent } from "./types";
+import type { Issue, IssueTimelineEvent } from "./types";
 
 function mapIssue(issue: {
   number: number;
@@ -130,25 +130,3 @@ export async function fetchIssueTimeline(
   return events;
 }
 
-export async function fetchIssueComments(
-  owner: string,
-  repo: string,
-  issueNumber: number,
-): Promise<IssueComment[]> {
-  const octokit = await getOctokit();
-  const { data } = await octokit.rest.issues.listComments({
-    owner,
-    repo,
-    issue_number: issueNumber,
-    per_page: 100,
-  });
-  return data.map((c) => ({
-    id: c.id,
-    user: {
-      login: c.user?.login ?? "",
-      avatarUrl: c.user?.avatar_url ?? "",
-    },
-    body: c.body ?? "",
-    createdAt: c.created_at,
-  }));
-}

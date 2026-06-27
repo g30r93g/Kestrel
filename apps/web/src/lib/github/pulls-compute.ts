@@ -22,8 +22,9 @@ export function computeVerdict(
   const notables: string[] = [];
 
   // Required checks
+  const BLOCKING_CONCLUSIONS = new Set<string>(["failure", "timed_out", "action_required"]);
   const failingRequired = checks.filter(
-    (c) => c.isRequired && c.conclusion === "failure",
+    (c) => c.isRequired && c.conclusion !== null && BLOCKING_CONCLUSIONS.has(c.conclusion),
   );
   if (failingRequired.length > 0) {
     const names = failingRequired.map((c) => c.name).join(", ");
