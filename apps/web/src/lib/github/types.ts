@@ -131,3 +131,48 @@ export interface TagsAndReleasesItem {
     assets: ReleaseAsset[];
   } | null;
 }
+
+export interface IssueLabel {
+  name: string;
+  color: string;
+}
+
+export interface IssueUser {
+  login: string;
+  avatarUrl: string;
+}
+
+export interface IssueMilestone {
+  title: string;
+  number: number;
+}
+
+export type IssueState = "open" | "closed";
+
+export interface Issue {
+  number: number;
+  title: string;
+  state: IssueState;
+  body: string | null;
+  labels: IssueLabel[];
+  assignees: IssueUser[];
+  milestone: IssueMilestone | null;
+  user: IssueUser;
+  createdAt: string;
+  updatedAt: string;
+  commentCount: number;
+}
+
+export interface IssueComment {
+  id: number;
+  user: IssueUser;
+  body: string;
+  createdAt: string;
+}
+
+export interface IssueFilters {
+  labels: string[];
+  assignee: string | null;
+  milestone: string | null;
+  author: string | null;
+}
