@@ -9,9 +9,9 @@ import useSWR from "swr";
 import { PrRow } from "./pr-row";
 
 const TABS: Array<{ filter: PullsListFilter; label: string; segment: string }> = [
-  { filter: "open", label: "Open", segment: "" },
-  { filter: "mine", label: "Mine", segment: "mine" },
   { filter: "assigned", label: "Assigned To Me", segment: "assigned" },
+  { filter: "mine", label: "Mine", segment: "mine" },
+  { filter: "open", label: "Open", segment: "" },
   { filter: "drafts", label: "Drafts", segment: "drafts" },
   { filter: "closed", label: "Closed", segment: "closed" },
   { filter: "merged", label: "Merged", segment: "merged" },

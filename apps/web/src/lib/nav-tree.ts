@@ -114,9 +114,9 @@ export const repoGroups: NavGroup[] = [
     id: "work",
     nodes: [
       drill("pulls", "Pull requests", GitPullRequest, [
-        leaf("open", "Open", GitPullRequest, ""),
-        leaf("mine", "Mine", GitPullRequest),
         leaf("assigned", "Assigned To Me", GitPullRequest),
+        leaf("mine", "Mine", GitPullRequest),
+        leaf("open", "Open", GitPullRequest, ""),
         leaf("drafts", "Drafts", CircleDot),
         leaf("closed", "Closed", GitPullRequestClosed),
         leaf("merged", "Merged", GitMerge),
