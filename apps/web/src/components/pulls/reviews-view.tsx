@@ -14,6 +14,12 @@ const TABS: Array<{ filter: ReviewsFilter; label: string; segment: string }> = [
   { filter: "done", label: "I've reviewed", segment: "done" },
 ];
 
+// NOTE: The standalone "Review Queue" sidebar entry was removed because it
+// overlapped heavily with "Pull requests". This view is still reachable at
+// /{owner}/{repo}/reviews and should be folded into the repo Overview view
+// (the "Requested of me" queue is the piece worth surfacing there).
+// TODO(overview): embed this queue (or its "requested" tab) into the Overview.
+
 export function ReviewsView({
   owner,
   repo,
