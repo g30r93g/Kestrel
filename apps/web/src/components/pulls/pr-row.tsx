@@ -1,12 +1,17 @@
 "use client";
 
-import type { EnrichedPullRequest, PRReviewState } from "@/lib/github/types";
+import type {
+  EnrichedPullRequest,
+  PRReviewState,
+  RowVerdictStatus,
+} from "@/lib/github/types";
 import {
   detectRiskySurfaces,
   reviewStateForViewer,
   rowVerdict,
   timeAgo,
 } from "@/lib/github/pulls-list-utils";
+import { Badge } from "@/components/ui/badge";
 import {
   AlertTriangle,
   CircleCheck,
@@ -23,6 +28,18 @@ const ROLLUP_META = {
   running: { icon: Loader, label: "checks running", cls: "text-amber-600" },
   none: { icon: CircleDot, label: "no checks", cls: "text-muted-foreground" },
 } as const;
+
+const VERDICT_VARIANT: Record<
+  RowVerdictStatus,
+  "default" | "secondary" | "destructive" | "outline"
+> = {
+  NOT_READY: "destructive",
+  NEEDS_REVIEW: "default",
+  READY: "secondary",
+  MERGED: "secondary",
+  DRAFT: "outline",
+  CLOSED: "outline",
+};
 
 const VIEWER_REVIEW_LABEL: Record<PRReviewState, string> = {
   APPROVED: "you approved",
@@ -100,12 +117,10 @@ export function PrRow({
             )}
           </div>
 
-          <div className="mt-2 text-xs text-muted-foreground">
-            verdict:{" "}
-            <span className="font-medium text-foreground">
-              {verdict.status.replace("_", " ")}
-            </span>{" "}
-            — {verdict.reason}
+          <div className="mt-2">
+            <Badge variant={VERDICT_VARIANT[verdict.status]}>
+              {verdict.reason}
+            </Badge>
           </div>
         </div>
 

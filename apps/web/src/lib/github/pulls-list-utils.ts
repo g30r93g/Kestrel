@@ -38,18 +38,19 @@ export function buildSearchQuery(
   switch (filter) {
     case "open":
       return `${base} is:open`;
-    case "yours":
+    case "mine":
       return `${base} is:open author:@me`;
-    case "requested":
-      return `${base} is:open review-requested:@me`;
-    case "merged":
-      return `${base} is:merged`;
+    case "assigned":
+      return `${base} is:open assignee:@me`;
     case "drafts":
       return `${base} is:open draft:true`;
-    case "failing":
-      return `${base} is:open status:failure`;
-    case "running":
-      return `${base} is:open status:pending`;
+    case "closed":
+      return `${base} is:closed is:unmerged`;
+    case "merged":
+      return `${base} is:merged`;
+    // ReviewsFilter values
+    case "requested":
+      return `${base} is:open review-requested:@me`;
     case "done":
       return `${base} reviewed-by:@me`;
     default:

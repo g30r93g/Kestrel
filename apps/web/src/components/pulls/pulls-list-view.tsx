@@ -10,12 +10,11 @@ import { PrRow } from "./pr-row";
 
 const TABS: Array<{ filter: PullsListFilter; label: string; segment: string }> = [
   { filter: "open", label: "Open", segment: "" },
-  { filter: "yours", label: "Yours", segment: "yours" },
-  { filter: "requested", label: "Review requests", segment: "requested" },
-  { filter: "merged", label: "Merged", segment: "merged" },
+  { filter: "mine", label: "Mine", segment: "mine" },
+  { filter: "assigned", label: "Assigned To Me", segment: "assigned" },
   { filter: "drafts", label: "Drafts", segment: "drafts" },
-  { filter: "failing", label: "Failing", segment: "failing" },
-  { filter: "running", label: "Running", segment: "running" },
+  { filter: "closed", label: "Closed", segment: "closed" },
+  { filter: "merged", label: "Merged", segment: "merged" },
 ];
 
 export function PullsListView({

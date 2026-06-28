@@ -79,12 +79,11 @@ export default async function DashboardPage({
     // List view: /pulls (Open) or /pulls/{filter}
     const PULLS_LIST_FILTERS = new Set([
       "open",
-      "yours",
-      "requested",
-      "merged",
+      "mine",
+      "assigned",
       "drafts",
-      "failing",
-      "running",
+      "closed",
+      "merged",
     ]);
     if (seg2 === undefined || PULLS_LIST_FILTERS.has(seg2)) {
       const filter = (seg2 ?? "open") as PullsListFilter;

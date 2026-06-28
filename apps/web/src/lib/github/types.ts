@@ -418,12 +418,11 @@ export type CheckRollupState = "passing" | "failing" | "running" | "none";
 
 export type PullsListFilter =
   | "open"
-  | "yours"
-  | "requested"
-  | "merged"
+  | "mine"
+  | "assigned"
   | "drafts"
-  | "failing"
-  | "running";
+  | "closed"
+  | "merged";
 
 export type ReviewsFilter = "requested" | "done";
 
