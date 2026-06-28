@@ -42,7 +42,7 @@ export function PRDetailBar() {
     <>
       <Separator
         orientation="vertical"
-        className="mx-1 data-[orientation=vertical]:h-4"
+        className="mx-1"
       />
       <Button
         variant="ghost"
