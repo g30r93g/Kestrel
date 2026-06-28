@@ -40,6 +40,10 @@ export function PRDetailBar() {
 
   return (
     <>
+      <Separator
+        orientation="vertical"
+        className="mx-1 data-[orientation=vertical]:h-4"
+      />
       <Button
         variant="ghost"
         size="icon-sm"
@@ -48,10 +52,6 @@ export function PRDetailBar() {
       >
         <ArrowLeft className="size-4" />
       </Button>
-      <Separator
-        orientation="vertical"
-        className="mx-1 data-[orientation=vertical]:h-4"
-      />
       <span className="flex items-center gap-2 text-sm font-medium">
         <GitPullRequest className="size-4 shrink-0" />
         <span className="max-w-80 truncate">{label}</span>
