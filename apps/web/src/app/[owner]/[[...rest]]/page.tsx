@@ -86,7 +86,7 @@ export default async function DashboardPage({
       "merged",
     ]);
     if (seg2 === undefined || PULLS_LIST_FILTERS.has(seg2)) {
-      const filter = (seg2 ?? "open") as PullsListFilter;
+      const filter = (seg2 ?? "assigned") as PullsListFilter;
       return <PullsListView owner={owner} repo={repo} filter={filter} />;
     }
 
