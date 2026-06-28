@@ -6,7 +6,9 @@ import {
   Eye,
   FolderGit2,
   GitBranch,
+  GitMerge,
   GitPullRequest,
+  GitPullRequestClosed,
   House,
   LayoutDashboard,
   LayoutGrid,
@@ -111,23 +113,15 @@ export const repoGroups: NavGroup[] = [
   {
     id: "work",
     nodes: [
-      drill("reviews", "Reviews", Eye, [
-        leaf("requested", "Requested", Eye, ""),
-        leaf("done", "Done", Eye),
-      ], 2),
       drill("pulls", "Pull requests", GitPullRequest, [
-        leaf("open", "Open", GitPullRequest, ""),
-        leaf("yours", "Yours", GitPullRequest),
-        leaf("requested", "Review requests", GitPullRequest),
-        leaf("merged", "Merged", GitPullRequest),
-        leaf("drafts", "Drafts", GitPullRequest),
+        leaf("assigned", "Assigned To Me", GitPullRequest, ""),
+        leaf("mine", "Mine", GitPullRequest),
+        leaf("open", "Open", GitPullRequest),
+        leaf("drafts", "Drafts", CircleDot),
+        leaf("closed", "Closed", GitPullRequestClosed),
+        leaf("merged", "Merged", GitMerge),
       ], 5),
       leaf("issues", "Issues", CircleDot),
-      drill("checks", "Checks", CircleCheck, [
-        leaf("failing", "Failing", CircleCheck, ""),
-        leaf("running", "Running", CircleCheck),
-        leaf("all", "All", CircleCheck),
-      ], 1),
     ],
   },
 ];

@@ -411,3 +411,66 @@ export interface ReviewDraft {
   markedFiles: string[];
   body: string;
 }
+
+// --- Enriched PR list (Reviews queue + Pulls list) ---
+
+export type CheckRollupState = "passing" | "failing" | "running" | "none";
+
+export type PullsListFilter =
+  | "open"
+  | "mine"
+  | "assigned"
+  | "drafts"
+  | "closed"
+  | "merged";
+
+export type ReviewsFilter = "requested" | "done";
+
+export interface EnrichedReviewRequest {
+  login: string; // user login, or team name for team requests
+  avatarUrl: string; // "" for teams
+}
+
+export interface EnrichedReview {
+  login: string;
+  state: PRReviewState;
+}
+
+export interface EnrichedPullRequest {
+  number: number;
+  title: string;
+  state: PRLifecycleState;
+  author: PRUser;
+  baseRef: string;
+  headRef: string;
+  createdAt: string;
+  updatedAt: string;
+  additions: number;
+  deletions: number;
+  changedFiles: number;
+  filePaths: string[];
+  reviewDecision: "APPROVED" | "CHANGES_REQUESTED" | "REVIEW_REQUIRED" | null;
+  reviewRequests: EnrichedReviewRequest[];
+  latestReviews: EnrichedReview[];
+  checkRollup: CheckRollupState;
+  mergeable: PRMergeableState;
+}
+
+export type RowVerdictStatus =
+  | "READY"
+  | "NOT_READY"
+  | "NEEDS_REVIEW"
+  | "MERGED"
+  | "DRAFT"
+  | "CLOSED";
+
+export interface RowVerdict {
+  status: RowVerdictStatus;
+  reason: string;
+}
+
+export interface EnrichedPullsResult {
+  viewerLogin: string;
+  issueCount: number;
+  prs: EnrichedPullRequest[];
+}

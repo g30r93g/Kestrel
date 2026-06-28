@@ -8,7 +8,9 @@ import { TagsAndReleasesView } from "@/components/tags-and-releases/tags-and-rel
 import { PullsView } from "@/components/pulls/pulls-view";
 import { DiffView } from "@/components/pulls/diff-view";
 import { ChecksView } from "@/components/pulls/checks-view";
-import type { BranchFilter } from "@/lib/github/types";
+import { ReviewsView } from "@/components/pulls/reviews-view";
+import { PullsListView } from "@/components/pulls/pulls-list-view";
+import type { BranchFilter, ReviewsFilter, PullsListFilter } from "@/lib/github/types";
 
 export default async function DashboardPage({
   params,
@@ -51,13 +53,20 @@ export default async function DashboardPage({
     return <IssuesView key={`${owner}/${repo}`} owner={owner} repo={repo} />;
   }
 
-  // Pull requests: /{owner}/{repo}/pulls[/{number}]
+  // Reviews queue: /{owner}/{repo}/reviews[/{filter}]
+  if (segments.length >= 2 && segments[1] === "reviews") {
+    const repo = segments[0];
+    const filter = (segments[2] ?? "requested") as ReviewsFilter;
+    return <ReviewsView owner={owner} repo={repo} filter={filter} />;
+  }
+
+  // Pull requests: /{owner}/{repo}/pulls[/{filter|number|new}][/{subview}]
   if (segments.length >= 2 && segments[1] === "pulls") {
     const repo = segments[0];
-    const prNumberStr = segments[2];
+    const seg2 = segments[2];
 
     // /pulls/new is the creation route (Plan 3 — not yet implemented)
-    if (prNumberStr === "new") {
+    if (seg2 === "new") {
       return (
         <div className="p-4 md:p-6">
           <div className="rounded-lg border border-dashed p-8 text-sm text-muted-foreground">
@@ -67,17 +76,30 @@ export default async function DashboardPage({
       );
     }
 
-    const prNumber = prNumberStr ? parseInt(prNumberStr, 10) : undefined;
+    // List view: /pulls (Open) or /pulls/{filter}
+    const PULLS_LIST_FILTERS = new Set([
+      "open",
+      "mine",
+      "assigned",
+      "drafts",
+      "closed",
+      "merged",
+    ]);
+    if (seg2 === undefined || PULLS_LIST_FILTERS.has(seg2)) {
+      const filter = (seg2 ?? "assigned") as PullsListFilter;
+      return <PullsListView owner={owner} repo={repo} filter={filter} />;
+    }
+
+    // Detail view: /pulls/{number}[/diff|/checks]
+    const prNumber = parseInt(seg2, 10);
     const subView = segments[3];
 
-    if (subView === "diff" && prNumber !== undefined) {
+    if (subView === "diff") {
       return <DiffView owner={owner} repo={repo} prNumber={prNumber} />;
     }
-
-    if (subView === "checks" && prNumber !== undefined) {
+    if (subView === "checks") {
       return <ChecksView owner={owner} repo={repo} prNumber={prNumber} />;
     }
-
     return <PullsView owner={owner} repo={repo} prNumber={prNumber} />;
   }
 
